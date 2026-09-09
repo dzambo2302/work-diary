@@ -1,0 +1,70 @@
+name: Release
+
+# Every push to main — including a merged pull request — runs the full test
+# suite and, only if it passes, publishes a Release with the packaged
+# extension attached.
+on:
+  push:
+    branches:
+      - main
+
+# Releases are cut in order; cancelling a half-finished one would leave a tag
+# without an artifact.
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Test, package and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Tests gate the release: nothing is published if these fail.
+      - name: Unit tests
+        run: npm test
+
+      - name: Typecheck and build
+        run: npm run build
+
+      # Chrome only accepts 1-4 dot-separated integers as a version, so the run
+      # number becomes the patch component rather than a "-build" suffix. That
+      # keeps every release uniquely versioned and installable.
+      - name: Derive release version
+        id: version
+        run: |
+          BASE=$(jq -r '.version | split(".")[0:2] | join(".")' src/manifest.json)
+          echo "version=${BASE}.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Package the extension
+        id: package
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/package.mjs
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          files: artifacts/*.zip
+          generate_release_notes: true
+          body: |
+            Pracovný denník — Chrome/Edge extension, version ${{ steps.version.outputs.version }}.
+
+            **Install:** download the `.zip`, unpack it, then in `chrome://extensions`
+            turn on Developer mode and use *Load unpacked* on the unpacked folder.
+
+            Commit: ${{ github.sha }}

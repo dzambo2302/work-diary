@@ -1,0 +1,50 @@
+name: CI
+
+# Runs on every pull request, and on pushes to any branch except the default
+# one — main's pushes are covered by the release workflow, which runs the same
+# checks before it publishes anything.
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck, test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      # `npm run build` runs `tsc --noEmit` first, so this covers typechecking
+      # and proves the extension bundle still builds.
+      - name: Typecheck and build
+        run: npm run build
+
+      - name: Package the extension
+        run: node scripts/package.mjs
+
+      # Handy for reviewing a PR: download the built extension and load it
+      # unpacked without building locally.
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-diary-extension
+          path: artifacts/*.zip
+          if-no-files-found: error
+          retention-days: 14
