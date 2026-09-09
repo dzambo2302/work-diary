@@ -1,5 +1,7 @@
-import type { IsoDate } from '../domain/dates.js';
-import type { DayTypeCode } from '../domain/day-types.js';
+import { isoDate, type IsoDate } from '../domain/dates.js';
+import { isDayTypeCode, type DayTypeCode } from '../domain/day-types.js';
+import { slovakHolidays } from '../domain/holidays-sk.js';
+import { restDaySet, workdaysInYear } from '../domain/workdays.js';
 import { DEFAULT_SETTINGS, MIGRATIONS, dayTypeSeedSql } from './schema.js';
 
 /**
@@ -182,4 +184,73 @@ export function csvRows(db: Db, from: IsoDate, to: IsoDate): CsvRow[] {
      WHERE e.day BETWEEN ? AND ? ORDER BY e.day`,
     [from, to],
   ).map((r) => ({ day: r.day, typeLabel: r.label_sk, hours: r.hours, note: r.note }));
+}
+
+export function seededYears(db: Db): number[] {
+  const raw = getSetting(db, 'seeded_years') ?? '';
+  return raw
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0)
+    .sort((a, b) => a - b);
+}
+
+function markYearSeeded(db: Db, year: number): void {
+  const years = new Set(seededYears(db));
+  years.add(year);
+  setSetting(db, 'seeded_years', [...years].sort((a, b) => a - b).join(','));
+}
+
+/**
+ * Seeds `year`'s holiday rows and auto-fills its working days.
+ *
+ * Idempotent: existing day_entry rows and user-owned holiday rows are never
+ * touched, so re-running this can never destroy an edit.
+ */
+export function ensureYearSeeded(db: Db, year: number): { seeded: boolean; inserted: number } {
+  if (seededYears(db).includes(year)) return { seeded: false, inserted: 0 };
+
+  const rawType = getSetting(db, 'default_type') ?? 'office';
+  const typeCode: DayTypeCode = isDayTypeCode(rawType) ? rawType : 'office';
+  const rawHours = Number(getSetting(db, 'default_hours') ?? '8');
+  const hours = Number.isFinite(rawHours) && rawHours > 0 ? rawHours : 8;
+
+  let inserted = 0;
+  db.transaction(() => {
+    for (const h of slovakHolidays(year)) {
+      db.exec(
+        `INSERT INTO holiday(day, name, is_rest_day, needs_verification, source)
+         VALUES (?, ?, ?, ?, 'seed')
+         ON CONFLICT(day) DO UPDATE SET
+           name = excluded.name,
+           is_rest_day = CASE WHEN holiday.source = 'user'
+                              THEN holiday.is_rest_day ELSE excluded.is_rest_day END,
+           needs_verification = CASE WHEN holiday.source = 'user'
+                                     THEN 0 ELSE excluded.needs_verification END`,
+        [h.day, h.name, h.isRestDay ? 1 : 0, h.needsVerification ? 1 : 0],
+      );
+    }
+
+    // Read the rest days back from the table so a user's earlier correction
+    // governs the auto-fill, with the computed set unioned in as a floor.
+    const rest = new Set(
+      db.all<{ day: IsoDate }>(
+        'SELECT day FROM holiday WHERE is_rest_day = 1 AND day BETWEEN ? AND ?',
+        [isoDate(year, 1, 1), isoDate(year, 12, 31)],
+      ).map((r) => r.day),
+    );
+    for (const d of restDaySet(year)) rest.add(d);
+
+    for (const day of workdaysInYear(year, rest)) {
+      db.exec(
+        `INSERT OR IGNORE INTO day_entry(day, type_code, hours, note)
+         VALUES (?, ?, ?, NULL)`,
+        [day, typeCode, hours],
+      );
+      inserted += 1;
+    }
+    markYearSeeded(db, year);
+  });
+
+  return { seeded: true, inserted };
 }
