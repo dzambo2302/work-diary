@@ -1,11 +1,13 @@
 import { isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
 import { DbClient } from './db/rpc.js';
-import type { DayTypeRow } from './db/repository.js';
+import type { DayEntry, DayTypeRow } from './db/repository.js';
 import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
 import { Router } from './ui/router.js';
 import { S } from './ui/strings.js';
 import { renderToolbar } from './ui/toolbar.js';
+import { renderDayView } from './ui/day-view.js';
+import { installKeyboard } from './ui/keyboard.js';
 import { renderMonthView } from './ui/month-view.js';
 import { renderYearView } from './ui/year-view.js';
 
@@ -28,9 +30,25 @@ let openPanel: Panel = null;
 
 // Kept current by render() so handlers installed once always see fresh data.
 let currentTypes: DayTypeRow[] = [];
+let defaultHours = 8;
 let cellFor: (day: IsoDate) => DayCell = () => {
   throw new Error('not loaded');
 };
+
+installKeyboard(router, {
+  onTypeIndex: (i) => {
+    const type = currentTypes[i];
+    if (!type || router.current.view !== 'day') return;
+    // Keep whatever hours the day already has; only the type changes.
+    const entry: DayEntry = {
+      day: router.current.date,
+      typeCode: type.code,
+      hours: cellFor(router.current.date).hours ?? defaultHours,
+      note: cellFor(router.current.date).note,
+    };
+    void client.call('upsertEntry', entry).then(render);
+  },
+});
 
 function activeTheme(): 'light' | 'dark' {
   const forced = document.documentElement.dataset.theme;
@@ -58,6 +76,11 @@ async function render(): Promise<void> {
     client.call('loadRange', isoDate(year, 1, 1), isoDate(year, 12, 31)),
     client.call('listDayTypes'),
   ]);
+  const settings = await client.call('getSettings');
+  defaultHours = Number(settings.default_hours ?? '8') || 8;
+  document.documentElement.dataset.theme =
+    settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : '';
+
   currentTypes = types;
   cellFor = buildDayIndex(range.entries, range.holidays, types, activeTheme());
 
@@ -71,11 +94,16 @@ async function render(): Promise<void> {
     const { month } = parseIso(router.current.date);
     renderMonthView(viewRoot, { year, month, cellFor, onPick: openDay });
   } else {
-    viewRoot.replaceChildren(
-      el('div', { class: 'card', textContent: `${router.current.view} — ${router.current.date}` }),
-    );
+    renderDayView(viewRoot, {
+      day: router.current.date,
+      cell: cellFor(router.current.date),
+      types,
+      theme: activeTheme(),
+      defaultHours,
+      onSave: (entry) => { void client.call('upsertEntry', entry).then(render); },
+      onDelete: (day) => { void client.call('deleteEntry', day).then(render); },
+    });
   }
-  void currentTypes;
 }
 
 router.subscribe(() => {

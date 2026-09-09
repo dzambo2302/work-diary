@@ -300,3 +300,70 @@ body {
   font-size: var(--fs-xs); color: var(--fg-subtle);
   display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* --- Day editor --------------------------------------------------------- */
+.day { display: grid; gap: var(--s-5); max-width: 720px; }
+.day__header { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+.day__title {
+  font-size: var(--fs-2xl); font-weight: 600;
+  letter-spacing: -0.02em; margin: 0;
+}
+.day__badges { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.badge {
+  font-size: var(--fs-xs);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--fg-muted);
+  padding: 2px var(--s-2);
+  border-radius: var(--r-full);
+}
+.badge--warn { border-color: var(--accent); color: var(--accent); }
+.day__row { display: flex; gap: var(--s-4); align-items: flex-start; }
+.day__actions { display: flex; justify-content: flex-end; }
+
+.field { display: grid; gap: var(--s-2); }
+.field--grow { flex: 1; min-width: 0; }
+.field__label { font-size: var(--fs-sm); color: var(--fg-muted); }
+.field__input {
+  font: inherit;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: var(--s-2) var(--s-3);
+  width: 8rem;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.field__input--area { width: 100%; resize: vertical; }
+.field__input:hover { border-color: var(--fg-subtle); }
+
+.picker { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.picker__item {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--fg);
+  transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease);
+}
+.picker__icon { color: var(--cell); display: inline-flex; }
+.picker__item:hover { background: color-mix(in srgb, var(--cell) 10%, var(--surface)); }
+.picker__item[aria-checked="true"] {
+  border-color: var(--cell);
+  background: color-mix(in srgb, var(--cell) 16%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--cell);
+}
+.picker__key {
+  font: var(--fs-xs)/1 var(--font);
+  color: var(--fg-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 2px 5px;
+}
