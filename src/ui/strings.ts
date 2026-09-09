@@ -6,6 +6,9 @@ const SK_MONTHS_GENITIVE = [
   'júla', 'augusta', 'septembra', 'októbra', 'novembra', 'decembra',
 ] as const;
 
+/** Column headers for the month calendar, Monday first. */
+export const SK_WEEKDAYS_SHORT = ['po', 'ut', 'st', 'št', 'pi', 'so', 'ne'] as const;
+
 /** Slovak has three plural forms: 1 / 2–4 / everything else. */
 export function plural(n: number, one: string, few: string, many: string): string {
   if (n === 1) return one;
@@ -50,6 +53,9 @@ export const S = {
   previous: 'Predchádzajúce obdobie',
   next: 'Nasledujúce obdobie',
   viewSwitcher: 'Prepínač zobrazenia',
+
+  themeToLight: 'Prepnúť na svetlý vzhľad',
+  themeToDark: 'Prepnúť na tmavý vzhľad',
 
   stats: 'Štatistika',
   settings: 'Nastavenia',

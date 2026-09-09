@@ -50,5 +50,8 @@ export function renderYearView(root: HTMLElement, ctx: YearContext): void {
 
   const legendRoot = el('div', { class: 'legend' });
   ctx.onLegend?.(legendRoot);
-  root.replaceChildren(el('div', { class: 'card' }, [grid, legendRoot]));
+  // The 31-column grid has a floor width; it scrolls inside this wrapper so the
+  // page body never scrolls horizontally on a narrow window.
+  const scroller = el('div', { class: 'year__scroll' }, [grid]);
+  root.replaceChildren(el('div', { class: 'card' }, [scroller, legendRoot]));
 }

@@ -77,24 +77,32 @@ function togglePanel(p: Exclude<Panel, null>): void {
 }
 
 async function render(): Promise<void> {
+  const { year } = parseIso(router.current.date);
+  await client.call('ensureYearSeeded', year);
+
+  // Settings first: the theme must be applied before anything renders, or the
+  // toolbar's toggle would offer the theme that is already on screen.
+  const settings = await client.call('getSettings');
+  defaultHours = Number(settings.default_hours ?? '8') || 8;
+  document.documentElement.dataset.theme =
+    settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : '';
+
   renderToolbar(toolbarRoot, router, {
     onStats: () => togglePanel('stats'),
     onSettings: () => togglePanel('settings'),
     onExport: () => togglePanel('export'),
+    onToggleTheme: () => {
+      const next = activeTheme() === 'dark' ? 'light' : 'dark';
+      void client.call('setSetting', 'theme', next).then(render);
+    },
+    theme: activeTheme(),
     isOpen: (p) => openPanel === p,
   });
-
-  const { year } = parseIso(router.current.date);
-  await client.call('ensureYearSeeded', year);
 
   const [range, types] = await Promise.all([
     client.call('loadRange', isoDate(year, 1, 1), isoDate(year, 12, 31)),
     client.call('listDayTypes'),
   ]);
-  const settings = await client.call('getSettings');
-  defaultHours = Number(settings.default_hours ?? '8') || 8;
-  document.documentElement.dataset.theme =
-    settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : '';
 
   currentTypes = types;
   cellFor = buildDayIndex(range.entries, range.holidays, types, activeTheme());

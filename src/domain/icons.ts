@@ -33,3 +33,22 @@ export function iconSvg(code: DayTypeCode): string {
     `stroke-linejoin="round" aria-hidden="true">${PATHS[code]}</svg>`
   );
 }
+
+/** Icons that are not day types: toolbar affordances. */
+const UI_PATHS = {
+  sun:
+    '<circle cx="12" cy="12" r="4"/>' +
+    '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2' +
+    'M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+} as const;
+
+export type UiIconName = keyof typeof UI_PATHS;
+
+export function uiIconSvg(name: UiIconName): string {
+  return (
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.75" stroke-linecap="round" ' +
+    `stroke-linejoin="round" aria-hidden="true">${UI_PATHS[name]}</svg>`
+  );
+}

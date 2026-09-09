@@ -1,4 +1,5 @@
 import { parseIso, todayIso, type IsoDate } from '../domain/dates.js';
+import { uiIconSvg } from '../domain/icons.js';
 import { el } from './dom.js';
 import type { Router, ViewName } from './router.js';
 import { S, formatLongDate, formatMonthTitle } from './strings.js';
@@ -13,6 +14,9 @@ export interface ToolbarHandlers {
   onStats(): void;
   onSettings(): void;
   onExport(): void;
+  onToggleTheme(): void;
+  /** The theme currently on screen, so the toggle can offer the other one. */
+  theme: 'light' | 'dark';
   isOpen(panel: 'stats' | 'settings' | 'export'): boolean;
 }
 
@@ -60,6 +64,15 @@ export function renderToolbar(root: HTMLElement, router: Router, h: ToolbarHandl
       onclick: () => router.go({ date: todayIso() }),
     }),
     el('div', { class: 'toolbar__spacer' }),
+    // Offers the theme you would switch *to*, which is what the icon shows.
+    el('button', {
+      class: 'btn btn--ghost btn--square',
+      type: 'button',
+      html: uiIconSvg(h.theme === 'dark' ? 'sun' : 'moon'),
+      'aria-label': h.theme === 'dark' ? S.themeToLight : S.themeToDark,
+      title: h.theme === 'dark' ? S.themeToLight : S.themeToDark,
+      onclick: h.onToggleTheme,
+    }),
     panelButton(S.stats, 'stats', h.onStats),
     panelButton(S.exportMenu, 'export', h.onExport),
     panelButton(S.settings, 'settings', h.onSettings),

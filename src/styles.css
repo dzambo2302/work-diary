@@ -93,6 +93,10 @@ body {
   gap: var(--s-5);
 }
 
+/* Grid and flex items default to min-width:auto, which stops an inner
+   scroller from ever shrinking. Reset it down the layout chain. */
+#app > *, .view, .card, .panel { min-width: 0; }
+
 /* One consistent focus ring everywhere. */
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--focus);
@@ -132,6 +136,13 @@ body {
   font-family: var(--font);
 }
 .btn--icon:hover { color: var(--fg); }
+.btn--square {
+  padding: var(--s-2);
+  color: var(--fg-muted);
+  border-color: var(--line-strong);
+}
+.btn--square:hover { color: var(--fg); }
+.btn--square svg { display: block; }
 
 /* Segmented control for the view switcher */
 .segmented {
@@ -193,7 +204,9 @@ body {
 }
 
 /* --- Year heatmap ------------------------------------------------------- */
+.year__scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: var(--s-1); }
 .year {
+  min-width: 42rem;
   display: grid;
   grid-template-columns: 3.4rem repeat(31, 1fr);
   gap: 2px;

@@ -3,9 +3,7 @@ import { addDays, dayOfWeek, daysInMonth, isoDate, parseIso, type IsoDate }
 import { iconSvg } from '../domain/icons.js';
 import { el } from './dom.js';
 import type { DayCell } from './day-model.js';
-import { formatHours } from './strings.js';
-
-const WEEKDAY_ABBR = ['po', 'ut', 'st', 'št', 'pi', 'so', 'ne'] as const;
+import { SK_WEEKDAYS_SHORT, formatHours } from './strings.js';
 
 export interface MonthContext {
   year: number;
@@ -17,7 +15,7 @@ export interface MonthContext {
 export function renderMonthView(root: HTMLElement, ctx: MonthContext): void {
   const grid = el('div', { class: 'month' });
 
-  for (const abbr of WEEKDAY_ABBR) {
+  for (const abbr of SK_WEEKDAYS_SHORT) {
     grid.append(el('div', { class: 'month__weekday', textContent: abbr }));
   }
 
