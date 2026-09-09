@@ -279,3 +279,26 @@ restart browser, read back).
 | Holiday law changes again | Holidays are editable data, not code. |
 | Clearing browser data wipes OPFS | Backup export shipped in v1; Settings shows the last backup date and nags after 30 days. |
 | Sources disagree on 2026 rest days | Uncertain rows flagged in Settings for user confirmation. |
+
+### Spike result (2026-09-09)
+
+**OPFS confirmed.** Chrome 152.0.7977.83 on Windows 11. `sqlite3InitModule()` +
+`installOpfsSAHPoolVfs({ name: 'work-diary' })` + `new OpfsSAHPoolDb(...)` runs
+inside a dedicated Web Worker spawned from the extension page, with no COOP/COEP
+headers and no `SharedArrayBuffer`. A row counter incremented 1 → 2 → 3 across
+page loads and 4 → 5 across two full browser restarts of the same profile. The
+§3.3 fallback is not needed.
+
+Two corrections to §3 that the spike surfaced, both reflected in the plan:
+
+- `sqlite3InitModule()` takes no arguments in the published typings, so the
+  Emscripten `print`/`printErr` overrides in early drafts do not type-check.
+- `SAHPoolUtil.exportFile()` and `.importDb()` are **asynchronous**
+  (`Promise<Uint8Array>` / `Promise<number>`), so the backup and restore paths
+  in §8 must await them.
+
+Vite emits `sqlite3.wasm` as a bundled asset automatically from the package's
+`new URL(..., import.meta.url)` reference; no static-copy step is required.
+
+Loading the extension for automated testing needs CDP `Extensions.loadUnpacked`
+— Chrome 136+ ignores the `--load-extension` command-line switch.
