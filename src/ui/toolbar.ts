@@ -40,12 +40,17 @@ export function renderToolbar(root: HTMLElement, router: Router, h: ToolbarHandl
     ),
   );
 
+  const ICONS = { stats: 'stats', export: 'download', settings: 'settings' } as const;
   const panelButton = (label: string, key: 'stats' | 'settings' | 'export', onclick: () => void) =>
     el('button', {
-      class: 'btn', type: 'button', textContent: label,
+      class: 'btn',
+      type: 'button',
       'aria-pressed': String(h.isOpen(key)),
       onclick,
-    });
+    }, [
+      el('span', { class: 'btn__icon', html: uiIconSvg(ICONS[key]) }),
+      el('span', { textContent: label }),
+    ]);
 
   root.replaceChildren(
     switcher,

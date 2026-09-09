@@ -68,6 +68,9 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
   noteInput.addEventListener('change', save);
 
   const badges = el('div', { class: 'day__badges' });
+  if (cell.isToday) {
+    badges.append(el('span', { class: 'badge badge--today', textContent: S.todayBadge }));
+  }
   if (cell.holidayName) {
     badges.append(el('span', {
       class: 'badge',

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, cpSync } from 'node:fs';
 
 const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
@@ -29,9 +29,10 @@ export default defineConfig({
   worker: { format: 'es' },
   plugins: [
     {
-      name: 'copy-manifest',
+      name: 'copy-static',
       closeBundle() {
         copyFileSync(at('src/manifest.json'), at('dist/manifest.json'));
+        cpSync(at('src/icons'), at('dist/icons'), { recursive: true });
       },
     },
   ],

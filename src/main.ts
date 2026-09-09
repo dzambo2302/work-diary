@@ -10,6 +10,7 @@ import { S, days as skDays } from './ui/strings.js';
 import { download, renderExportPanel } from './ui/export.js';
 import { renderSettingsPanel } from './ui/settings-panel.js';
 import { renderLegend, renderStatsPanel } from './ui/stats-panel.js';
+import { toast } from './ui/toast.js';
 import { renderToolbar } from './ui/toolbar.js';
 import { renderDayView } from './ui/day-view.js';
 import { installKeyboard } from './ui/keyboard.js';
@@ -23,6 +24,16 @@ const toolbarRoot = el('header', { class: 'toolbar' });
 const panelRoot = el('aside', { class: 'panel-root', hidden: true });
 const viewRoot = el('main', { class: 'view' });
 app.replaceChildren(toolbarRoot, panelRoot, viewRoot);
+
+// SQLite takes a moment to boot; show a skeleton rather than a blank page.
+viewRoot.replaceChildren(
+  el('div', { class: 'card skeleton' }, [
+    el('div', { class: 'skeleton__bar', style: 'width: 38%' }),
+    el('div', { class: 'skeleton__grid' },
+      Array.from({ length: 21 }, () => el('div', { class: 'skeleton__cell' }))),
+    el('p', { class: 'subtle', textContent: S.loading }),
+  ]),
+);
 
 const client = new DbClient(
   new Worker(new URL('./db/worker.ts', import.meta.url), { type: 'module' }),
@@ -51,7 +62,7 @@ installKeyboard(router, {
       hours: cellFor(router.current.date).hours ?? defaultHours,
       note: cellFor(router.current.date).note,
     };
-    void client.call('upsertEntry', entry).then(render);
+    void client.call('upsertEntry', entry).then(() => { toast(S.saved); return render(); });
   },
 });
 
@@ -163,6 +174,7 @@ async function render(): Promise<void> {
   panelRoot.hidden = openPanel === null;
 
   const openDay = (day: IsoDate) => router.go({ view: 'day', date: day });
+  viewRoot.classList.remove('view--in');
 
   if (router.current.view === 'year') {
     renderYearView(viewRoot, {
@@ -179,10 +191,18 @@ async function render(): Promise<void> {
       types,
       theme: activeTheme(),
       defaultHours,
-      onSave: (entry) => { void client.call('upsertEntry', entry).then(render); },
-      onDelete: (day) => { void client.call('deleteEntry', day).then(render); },
+      onSave: (entry) => {
+        void client.call('upsertEntry', entry).then(() => { toast(S.saved); return render(); });
+      },
+      onDelete: (day) => {
+        void client.call('deleteEntry', day).then(() => { toast(S.saved); return render(); });
+      },
     });
   }
+
+  // Restart the entrance transition for the freshly rendered view.
+  void viewRoot.offsetWidth;
+  viewRoot.classList.add('view--in');
 }
 
 router.subscribe(() => {

@@ -37,13 +37,15 @@ export function renderYearView(root: HTMLElement, ctx: YearContext): void {
       const day = isoDate(ctx.year, m, d);
       const cell = ctx.cellFor(day);
       const node = el('button', {
-        class: `year__cell year__cell--${cell.kind}`,
+        class: `year__cell year__cell--${cell.kind}${cell.isToday ? ' is-today' : ''}`,
         type: 'button',
         title: cell.tooltip,
         'aria-label': cell.tooltip,
         onclick: () => ctx.onPick(day),
       });
       if (cell.color) node.style.setProperty('--cell', cell.color);
+      // Staggered reveal, one step per month row.
+      node.style.setProperty('--row', String(m));
       grid.append(node);
     }
   }

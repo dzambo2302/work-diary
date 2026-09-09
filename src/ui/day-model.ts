@@ -1,4 +1,4 @@
-import { isWeekend, type IsoDate } from '../domain/dates.js';
+import { isWeekend, todayIso, type IsoDate } from '../domain/dates.js';
 import type { DayTypeCode } from '../domain/day-types.js';
 import type { DayEntry, DayTypeRow, HolidayRow } from '../db/repository.js';
 import { S, formatHours, formatLongDate } from './strings.js';
@@ -8,6 +8,7 @@ export type DayKind = 'entry' | 'weekend' | 'rest' | 'empty';
 export interface DayCell {
   day: IsoDate;
   kind: DayKind;
+  isToday: boolean;
   typeCode: DayTypeCode | null;
   label: string;
   hours: number | null;
@@ -32,6 +33,7 @@ export function buildDayIndex(
   const holidayByDay = new Map(holidays.map((h) => [h.day, h]));
   const typeByCode = new Map(types.map((t) => [t.code, t]));
   const colorOf = (t: DayTypeRow) => (theme === 'dark' ? t.colorDark : t.color);
+  const today = todayIso();
 
   return (day: IsoDate): DayCell => {
     const holiday = holidayByDay.get(day) ?? null;
@@ -45,7 +47,7 @@ export function buildDayIndex(
       if (entry.note) parts.push(entry.note);
       if (holidayName) parts.push(holidayName);
       return {
-        day, kind: 'entry', typeCode: entry.typeCode, label,
+        day, kind: 'entry', isToday: day === today, typeCode: entry.typeCode, label,
         hours: entry.hours, note: entry.note, holidayName,
         color: type ? colorOf(type) : null,
         tooltip: parts.join(' · '),
@@ -54,7 +56,7 @@ export function buildDayIndex(
 
     if (holiday?.isRestDay) {
       return {
-        day, kind: 'rest', typeCode: null, label: S.restDay, hours: null,
+        day, kind: 'rest', isToday: day === today, typeCode: null, label: S.restDay, hours: null,
         note: null, holidayName, color: null,
         tooltip: `${formatLongDate(day)} · ${holidayName ?? S.holiday}`,
       };
@@ -62,14 +64,14 @@ export function buildDayIndex(
 
     if (isWeekend(day)) {
       return {
-        day, kind: 'weekend', typeCode: null, label: S.weekend, hours: null,
+        day, kind: 'weekend', isToday: day === today, typeCode: null, label: S.weekend, hours: null,
         note: null, holidayName, color: null,
         tooltip: `${formatLongDate(day)} · ${S.weekend}`,
       };
     }
 
     return {
-      day, kind: 'empty', typeCode: null, label: S.noEntry, hours: null,
+      day, kind: 'empty', isToday: day === today, typeCode: null, label: S.noEntry, hours: null,
       note: null, holidayName, color: null,
       tooltip: holidayName
         ? `${formatLongDate(day)} · ${holidayName} (${S.workingHoliday})`

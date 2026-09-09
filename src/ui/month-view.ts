@@ -42,8 +42,9 @@ function dayCell(day: IsoDate, ctx: MonthContext): HTMLElement {
   const cell = ctx.cellFor(day);
   const { day: dom } = parseIso(day);
 
+  const dayNumber = el('span', { class: 'month__dom', textContent: String(dom) });
   const head = el('div', { class: 'month__head' }, [
-    el('span', { class: 'month__dom', textContent: String(dom) }),
+    dayNumber,
     cell.hours !== null
       ? el('span', { class: 'month__hours', textContent: `${formatHours(cell.hours)} h` })
       : el('span'),
@@ -61,14 +62,18 @@ function dayCell(day: IsoDate, ctx: MonthContext): HTMLElement {
 
   const foot = el('div', { class: 'month__foot' });
   if (cell.holidayName) {
-    foot.append(el('span', { class: 'month__holiday', textContent: cell.holidayName }));
+    // A dot plus the name; the dot survives truncation on narrow columns.
+    foot.append(
+      el('span', { class: 'month__dot', 'aria-hidden': 'true' }),
+      el('span', { class: 'month__holiday', textContent: cell.holidayName }),
+    );
   } else if (cell.note) {
     // Notes are user data: textContent only, never innerHTML.
     foot.append(el('span', { class: 'month__note', textContent: cell.note }));
   }
 
   const node = el('button', {
-    class: `month__cell month__cell--${cell.kind}`,
+    class: `month__cell month__cell--${cell.kind}${cell.isToday ? ' is-today' : ''}`,
     type: 'button',
     'aria-label': cell.tooltip,
     title: cell.tooltip,

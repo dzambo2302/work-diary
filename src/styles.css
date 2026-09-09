@@ -454,3 +454,122 @@ body {
   background: color-mix(in srgb, var(--danger) 10%, var(--surface));
   border-color: color-mix(in srgb, var(--danger) 35%, var(--surface));
 }
+
+/* ===========================================================================
+   Polish: motion, today markers, toast, skeleton.
+   Everything here is disabled by the prefers-reduced-motion guard above.
+   =========================================================================== */
+
+/* Views cross-fade and settle upward on every navigation. */
+.view { opacity: 0; transform: translateY(4px); }
+.view--in {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
+}
+
+/* Panels slide down instead of appearing. */
+.panel-root:not([hidden]) { animation: panel-in var(--dur-base) var(--ease) both; }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Heatmap cells reveal a month row at a time. */
+.year__cell { animation: cell-in 260ms var(--ease) both; animation-delay: calc(var(--row, 0) * 22ms); }
+@keyframes cell-in {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: none; }
+}
+/* The hover magnification must win over the entrance transform. */
+.year__cell:not(.year__cell--void):hover { animation: none; }
+
+/* Today ------------------------------------------------------------------- */
+.year__cell.is-today {
+  /* Neutral rather than accent: the ring has to read against all six type
+     colours, including the blue one. */
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--fg);
+  z-index: 1;
+}
+.month__cell.is-today { border-color: var(--accent); }
+.month__cell.is-today .month__dom {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--r-full);
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  text-align: center;
+}
+.badge--today {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Small details ----------------------------------------------------------- */
+.btn__icon { display: inline-flex; color: var(--fg-subtle); }
+.btn[aria-pressed="true"] .btn__icon { color: currentColor; }
+.btn:active { transform: translateY(0.5px); }
+.picker__item:active { transform: scale(0.97); }
+.picker__item { transition: background var(--dur-fast) var(--ease),
+                            border-color var(--dur-fast) var(--ease),
+                            transform var(--dur-fast) var(--ease); }
+
+.month__hours {
+  background: var(--surface-2);
+  border-radius: var(--r-full);
+  padding: 1px var(--s-2);
+}
+.month__cell--entry .month__hours {
+  background: color-mix(in srgb, var(--cell) 22%, var(--surface));
+}
+.month__foot { display: flex; align-items: center; gap: var(--s-1); }
+.month__dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--fg-subtle); flex: none;
+}
+
+/* Stat bars grow from zero on each render. */
+.stat__fill { animation: bar-in 420ms var(--ease) both; transform-origin: left center; }
+@keyframes bar-in { from { transform: scaleX(0); } to { transform: none; } }
+
+/* Toast ------------------------------------------------------------------- */
+.toast {
+  position: fixed;
+  right: var(--s-5);
+  bottom: var(--s-5);
+  z-index: 50;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--fg);
+  color: var(--bg);
+  font-size: var(--fs-sm);
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
+}
+.toast--in { opacity: 1; transform: none; }
+
+/* Loading skeleton -------------------------------------------------------- */
+.skeleton { display: grid; gap: var(--s-4); }
+.skeleton__bar, .skeleton__cell {
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.skeleton__bar { height: 1.4rem; }
+.skeleton__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-2); }
+.skeleton__cell { height: 84px; }
+.skeleton__cell:nth-child(3n) { animation-delay: 0.15s; }
+.skeleton__cell:nth-child(3n+1) { animation-delay: 0.3s; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .view { opacity: 1; transform: none; }
+  .year__cell, .stat__fill, .panel-root:not([hidden]), .skeleton__bar, .skeleton__cell {
+    animation: none !important;
+  }
+}

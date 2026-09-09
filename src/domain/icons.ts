@@ -41,6 +41,17 @@ const UI_PATHS = {
     '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2' +
     'M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  stats:
+    '<path d="M3 21h18"/><rect x="5" y="12" width="3.4" height="6" rx="1"/>' +
+    '<rect x="10.3" y="7" width="3.4" height="11" rx="1"/>' +
+    '<rect x="15.6" y="10" width="3.4" height="8" rx="1"/>',
+  download:
+    '<path d="M12 3v11"/><path d="m7.5 10 4.5 4.5 4.5-4.5"/>' +
+    '<path d="M4 20h16"/>',
+  settings:
+    '<circle cx="12" cy="12" r="3"/>' +
+    '<path d="M12 2.5v2.2M12 19.3v2.2M4.2 7l1.9 1.1M17.9 15.9l1.9 1.1' +
+    'M4.2 17l1.9-1.1M17.9 8.1l1.9-1.1"/>',
 } as const;
 
 export type UiIconName = keyof typeof UI_PATHS;

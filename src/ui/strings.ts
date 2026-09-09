@@ -71,6 +71,8 @@ export const S = {
   restDay: 'Deň pracovného pokoja',
   workingHoliday: 'Sviatok — pracovný deň',
   noEntry: 'Bez záznamu',
+  todayBadge: 'Dnes',
+  saved: 'Uložené',
 
   statsTitle: 'Prehľad obdobia',
   statsTotal: 'Spolu',
