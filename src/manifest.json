@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Pracovný denník",
+  "version": "0.1.0",
+  "description": "Osobný denník pracovných dní so SQLite databázou.",
+  "action": { "default_title": "Pracovný denník" },
+  "background": { "service_worker": "service-worker.js", "type": "module" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "permissions": [],
+  "host_permissions": []
+}
