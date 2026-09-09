@@ -1,10 +1,12 @@
-import { isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
+import { daysInMonth, isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
+import { summarize } from './domain/stats.js';
 import { DbClient } from './db/rpc.js';
 import type { DayEntry, DayTypeRow } from './db/repository.js';
 import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
-import { Router } from './ui/router.js';
+import { Router, type ViewState } from './ui/router.js';
 import { S } from './ui/strings.js';
+import { renderLegend, renderStatsPanel } from './ui/stats-panel.js';
 import { renderToolbar } from './ui/toolbar.js';
 import { renderDayView } from './ui/day-view.js';
 import { installKeyboard } from './ui/keyboard.js';
@@ -56,6 +58,16 @@ function activeTheme(): 'light' | 'dark' {
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+/** The date range the current view covers, for stats and exports. */
+function rangeFor(state: ViewState): [IsoDate, IsoDate] {
+  const { year, month } = parseIso(state.date);
+  if (state.view === 'year') return [isoDate(year, 1, 1), isoDate(year, 12, 31)];
+  if (state.view === 'month') {
+    return [isoDate(year, month, 1), isoDate(year, month, daysInMonth(year, month))];
+  }
+  return [state.date, state.date];
+}
+
 function togglePanel(p: Exclude<Panel, null>): void {
   openPanel = openPanel === p ? null : p;
   void render();
@@ -84,12 +96,20 @@ async function render(): Promise<void> {
   currentTypes = types;
   cellFor = buildDayIndex(range.entries, range.holidays, types, activeTheme());
 
+  if (openPanel === 'stats') {
+    const [from, to] = rangeFor(router.current);
+    const groups = await client.call('summaryRows', from, to);
+    renderStatsPanel(panelRoot, summarize(groups, types, activeTheme()));
+  }
   panelRoot.hidden = openPanel === null;
 
   const openDay = (day: IsoDate) => router.go({ view: 'day', date: day });
 
   if (router.current.view === 'year') {
-    renderYearView(viewRoot, { year, cellFor, onPick: openDay });
+    renderYearView(viewRoot, {
+      year, cellFor, onPick: openDay,
+      onLegend: (node) => renderLegend(node, currentTypes, activeTheme()),
+    });
   } else if (router.current.view === 'month') {
     const { month } = parseIso(router.current.date);
     renderMonthView(viewRoot, { year, month, cellFor, onPick: openDay });

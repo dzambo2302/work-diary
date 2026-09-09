@@ -67,9 +67,8 @@ export const S = {
   noEntry: 'Bez záznamu',
 
   statsTitle: 'Prehľad obdobia',
-  statsDays: 'Dni',
-  statsHours: 'Hodiny',
-  statsWorkedHours: 'Odpracované hodiny',
+  statsTotal: 'Spolu',
+  statsWorkedHours: 'Odpracované',
   statsEmpty: 'Za toto obdobie nie sú žiadne záznamy.',
 
   settingsTitle: 'Nastavenia',

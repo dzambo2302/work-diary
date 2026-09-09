@@ -367,3 +367,32 @@ body {
   border-radius: var(--r-sm);
   padding: 2px 5px;
 }
+
+/* --- Statistics --------------------------------------------------------- */
+.panel__title { font-size: var(--fs-lg); font-weight: 600; margin: 0 0 var(--s-3); }
+.stats { display: grid; gap: var(--s-2); }
+.stat {
+  display: grid;
+  grid-template-columns: 20px 12rem 1fr 6rem 7rem;
+  align-items: center;
+  gap: var(--s-3);
+}
+.stat__icon { color: var(--cell); display: inline-flex; }
+.stat__label { font-size: var(--fs-sm); }
+.stat__bar {
+  background: var(--surface-2);
+  border-radius: var(--r-full);
+  height: 8px;
+  overflow: hidden;
+}
+.stat__fill { background: var(--cell); height: 100%; border-radius: var(--r-full); }
+.stat__days, .stat__hours { font-size: var(--fs-sm); text-align: right; }
+.stats__footer {
+  display: flex; gap: var(--s-5); justify-content: flex-end;
+  margin-top: var(--s-4); padding-top: var(--s-3);
+  border-top: 1px solid var(--line); font-size: var(--fs-sm);
+}
+@media (max-width: 760px) {
+  .stat { grid-template-columns: 20px 1fr auto; }
+  .stat__bar, .stat__days { display: none; }
+}
