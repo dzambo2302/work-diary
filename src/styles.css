@@ -426,3 +426,18 @@ body {
   display: inline-flex; align-items: center; gap: var(--s-2);
   cursor: pointer; white-space: nowrap; color: var(--fg-muted);
 }
+
+/* --- Export ------------------------------------------------------------- */
+.export { display: grid; gap: var(--s-4); }
+.export__row { display: flex; gap: var(--s-3); align-items: flex-end; flex-wrap: wrap; }
+.export__row .field__input { width: 11rem; }
+.notice {
+  margin: 0; padding: var(--s-3);
+  border-radius: var(--r-md); font-size: var(--fs-sm);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--surface));
+}
+.notice--warn {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--surface));
+}

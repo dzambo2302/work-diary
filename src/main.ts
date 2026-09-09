@@ -1,11 +1,13 @@
 import { daysInMonth, isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
+import { toCsv } from './domain/csv.js';
 import { summarize } from './domain/stats.js';
 import { DbClient } from './db/rpc.js';
 import type { DayEntry, DayTypeRow } from './db/repository.js';
 import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
 import { Router, type ViewState } from './ui/router.js';
-import { S } from './ui/strings.js';
+import { S, days as skDays } from './ui/strings.js';
+import { download, renderExportPanel } from './ui/export.js';
 import { renderSettingsPanel } from './ui/settings-panel.js';
 import { renderLegend, renderStatsPanel } from './ui/stats-panel.js';
 import { renderToolbar } from './ui/toolbar.js';
@@ -112,6 +114,41 @@ async function render(): Promise<void> {
       },
       onHoliday: (day, isRestDay) => {
         void client.call('setHolidayRestDay', day, isRestDay).then(render);
+      },
+    });
+  }
+  if (openPanel === 'export') {
+    renderExportPanel(panelRoot, {
+      year,
+      lastBackupAt: settings.last_backup_at ?? '',
+      onBackup: () => {
+        void (async () => {
+          const bytes = await client.call('exportDb');
+          download(
+            `pracovny-dennik-${todayIso()}.sqlite`,
+            new Blob([bytes as BlobPart], { type: 'application/vnd.sqlite3' }),
+          );
+          await client.call('setSetting', 'last_backup_at', todayIso());
+          await render();
+        })();
+      },
+      onCsv: (f, t) => {
+        void (async () => {
+          const rows = await client.call('csvRows', f, t);
+          download(
+            `pracovny-dennik-${f}_${t}.csv`,
+            new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }),
+          );
+        })();
+      },
+      onRestore: (picked) => {
+        void (async () => {
+          if (!confirm(S.importConfirm.replace('{count}', skDays(range.entries.length)))) return;
+          const bytes = new Uint8Array(await picked.arrayBuffer());
+          await client.call('importDb', bytes);
+          alert(S.importDone);
+          location.reload();
+        })();
       },
     });
   }
