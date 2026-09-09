@@ -17,6 +17,15 @@ npm run build     # tsc --noEmit && vite build -> dist/
 npm test          # 88 unit tests
 ```
 
+## Package
+
+```bash
+npm run package     # build + zip -> artifacts/work-diary-<version>.zip
+```
+
+The archive has `manifest.json` at its root, so it is ready for the Chrome Web
+Store or for *Load unpacked* after extracting.
+
 ## Install
 
 1. Open `chrome://extensions`
@@ -68,6 +77,16 @@ concrete holiday table for each year you open — only Easter is calculated — 
 any row can be corrected in **Nastavenia**. Days that are legally uncertain for
 that year sort to the top of the list with an *Overte platnosť* badge. If the
 law changes again, fix a row; you do not need a new build.
+
+## CI
+
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes
+  to any branch except `main`: unit tests, typecheck, build, and it uploads the
+  packaged extension as a downloadable artifact.
+- **Release** (`.github/workflows/release.yml`) runs on every push to `main`.
+  Tests gate it; if they pass it publishes a GitHub Release with the `.zip`
+  attached, versioned `<major>.<minor>.<run-number>` so every build is uniquely
+  installable.
 
 ## Layout
 
