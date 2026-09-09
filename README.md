@@ -1,5 +1,9 @@
 # Pracovný denník
 
+[![CI](https://github.com/dzambo2302/work-diary/actions/workflows/ci.yml/badge.svg)](https://github.com/dzambo2302/work-diary/actions/workflows/ci.yml)
+[![Release](https://github.com/dzambo2302/work-diary/actions/workflows/release.yml/badge.svg)](https://github.com/dzambo2302/work-diary/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/dzambo2302/work-diary)](https://github.com/dzambo2302/work-diary/releases/latest)
+
 A personal work diary as a Chrome/Edge extension. Every Slovak working day is
 pre-filled with a default type and 8 hours; you only touch the exceptions —
 vacation, sick days, doctor appointments, work travel, and the split between
@@ -8,6 +12,10 @@ office work and home office.
 Data lives in a real SQLite database compiled to WebAssembly and stored in the
 browser's Origin Private File System, so aggregation, typed columns and
 file-level backup all come for free. The UI is Slovak throughout.
+
+**Download:** grab the latest `.zip` from
+[Releases](https://github.com/dzambo2302/work-diary/releases/latest), extract it,
+and load the folder via *Load unpacked* — see [Install](#install).
 
 ## Build
 
