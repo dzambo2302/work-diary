@@ -1,24 +1,193 @@
+/* ===========================================================================
+   Design tokens. Every view composes these — no ad-hoc pixel values anywhere.
+   =========================================================================== */
 :root {
   color-scheme: light dark;
-  --bg: #ffffff;
-  --fg: #1f2933;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --recessed: #f3f4f6;
+
+  /* Type scale */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-xs: 11px;  --fs-sm: 12px;  --fs-md: 13px;
+  --fs-lg: 15px;  --fs-xl: 20px;  --fs-2xl: 28px;
+  --lh-tight: 1.25; --lh-normal: 1.5;
+
+  /* Spacing scale (4px base) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+  /* Radii and elevation */
+  --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-full: 999px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+  --shadow-2: 0 4px 12px rgb(0 0 0 / 0.10), 0 2px 4px rgb(0 0 0 / 0.06);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 90ms; --dur-base: 160ms;
+
+  /* Surfaces — light */
+  --bg: #fbfbfd;
+  --surface: #ffffff;
+  --surface-2: #f4f5f7;
+  --fg: #14181f;
+  --fg-muted: #5b6472;
+  --fg-subtle: #8a93a3;
+  --line: #e3e6ec;
+  --line-strong: #cdd2dc;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --focus: #2563eb;
+  --danger: #dc2626;
 }
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16181d;
-    --fg: #e5e7eb;
-    --muted: #9ca3af;
-    --line: #2b2f38;
-    --recessed: #1f232b;
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115;
+    --surface: #171a20;
+    --surface-2: #1e222a;
+    --fg: #e8eaef;
+    --fg-muted: #a2abba;
+    --fg-subtle: #6f7889;
+    --line: #262b34;
+    --line-strong: #363d49;
+    --accent: #60a5fa;
+    --accent-fg: #0f1115;
+    --focus: #60a5fa;
+    --danger: #f87171;
   }
 }
+
+:root[data-theme="dark"] {
+  --bg: #0f1115;
+  --surface: #171a20;
+  --surface-2: #1e222a;
+  --fg: #e8eaef;
+  --fg-muted: #a2abba;
+  --fg-subtle: #6f7889;
+  --line: #262b34;
+  --line-strong: #363d49;
+  --accent: #60a5fa;
+  --accent-fg: #0f1115;
+  --focus: #60a5fa;
+  --danger: #f87171;
+}
+
 * { box-sizing: border-box; }
+html, body { height: 100%; }
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: var(--fs-md)/var(--lh-normal) var(--font);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1; /* tabular numerals keep grids aligned */
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  min-height: 100vh;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-5) var(--s-7);
+  gap: var(--s-5);
+}
+
+/* One consistent focus ring everywhere. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* --- Buttons ------------------------------------------------------------ */
+.btn {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease);
+}
+.btn:hover { background: var(--surface-2); }
+.btn[aria-pressed="true"] {
+  background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
+}
+.btn--ghost { border-color: transparent; background: transparent; }
+.btn--ghost:hover { background: var(--surface-2); }
+.btn--danger { color: var(--danger); border-color: var(--danger); }
+.btn--icon {
+  font-size: var(--fs-xl);
+  line-height: 1;
+  padding: var(--s-1) var(--s-3);
+  color: var(--fg-muted);
+  font-family: var(--font);
+}
+.btn--icon:hover { color: var(--fg); }
+
+/* Segmented control for the view switcher */
+.segmented {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  padding: 2px;
+}
+.segmented .btn {
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-full);
+  padding: var(--s-1) var(--s-4);
+}
+.segmented .btn[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--shadow-1);
+}
+
+/* --- Layout ------------------------------------------------------------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+.toolbar__title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: var(--lh-tight);
+  margin: 0;
+  min-width: 15ch;
+}
+.toolbar__spacer { flex: 1; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+  padding: var(--s-4);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+}
+
+.muted { color: var(--fg-muted); }
+.subtle { color: var(--fg-subtle); font-size: var(--fs-sm); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
 }
