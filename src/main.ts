@@ -1,9 +1,12 @@
-import { parseIso, todayIso } from './domain/dates.js';
+import { isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
 import { DbClient } from './db/rpc.js';
+import type { DayTypeRow } from './db/repository.js';
+import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
 import { Router } from './ui/router.js';
 import { S } from './ui/strings.js';
 import { renderToolbar } from './ui/toolbar.js';
+import { renderYearView } from './ui/year-view.js';
 
 document.title = S.appTitle;
 
@@ -22,6 +25,18 @@ const router = new Router(todayIso());
 type Panel = 'stats' | 'settings' | 'export' | null;
 let openPanel: Panel = null;
 
+// Kept current by render() so handlers installed once always see fresh data.
+let currentTypes: DayTypeRow[] = [];
+let cellFor: (day: IsoDate) => DayCell = () => {
+  throw new Error('not loaded');
+};
+
+function activeTheme(): 'light' | 'dark' {
+  const forced = document.documentElement.dataset.theme;
+  if (forced === 'dark' || forced === 'light') return forced;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 function togglePanel(p: Exclude<Panel, null>): void {
   openPanel = openPanel === p ? null : p;
   void render();
@@ -38,11 +53,27 @@ async function render(): Promise<void> {
   const { year } = parseIso(router.current.date);
   await client.call('ensureYearSeeded', year);
 
+  const [range, types] = await Promise.all([
+    client.call('loadRange', isoDate(year, 1, 1), isoDate(year, 12, 31)),
+    client.call('listDayTypes'),
+  ]);
+  currentTypes = types;
+  cellFor = buildDayIndex(range.entries, range.holidays, types, activeTheme());
+
   panelRoot.hidden = openPanel === null;
 
-  viewRoot.replaceChildren(
-    el('div', { class: 'card', textContent: `${router.current.view} — ${router.current.date}` }),
-  );
+  if (router.current.view === 'year') {
+    renderYearView(viewRoot, {
+      year,
+      cellFor,
+      onPick: (day) => router.go({ view: 'day', date: day }),
+    });
+  } else {
+    viewRoot.replaceChildren(
+      el('div', { class: 'card', textContent: `${router.current.view} — ${router.current.date}` }),
+    );
+  }
+  void currentTypes;
 }
 
 router.subscribe(() => {

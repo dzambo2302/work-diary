@@ -191,3 +191,55 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
 }
+
+/* --- Year heatmap ------------------------------------------------------- */
+.year {
+  display: grid;
+  grid-template-columns: 3.4rem repeat(31, 1fr);
+  gap: 2px;
+  align-items: center;
+}
+.year__corner { height: var(--s-4); }
+.year__daynum {
+  font-size: var(--fs-xs);
+  color: var(--fg-subtle);
+  text-align: center;
+  line-height: 1;
+}
+.year__month {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  padding-right: var(--s-2);
+  text-align: right;
+  white-space: nowrap;
+}
+.year__cell {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  aspect-ratio: 1;
+  min-height: 18px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease);
+}
+.year__cell--entry { background: var(--cell); }
+.year__cell--rest {
+  background: repeating-linear-gradient(45deg, var(--line-strong) 0 2px, transparent 2px 5px);
+  border: 1px solid var(--line);
+}
+.year__cell--weekend { background: var(--surface-2); border: 1px solid var(--line); }
+.year__cell--empty { background: transparent; border: 1px dashed var(--line-strong); }
+.year__cell--void { background: none; cursor: default; pointer-events: none; }
+.year__cell:not(.year__cell--void):hover {
+  transform: scale(1.45);
+  box-shadow: var(--shadow-2);
+  position: relative;
+  z-index: 1;
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-4); }
+.legend__item { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--fs-sm); }
+.legend__swatch { width: 12px; height: 12px; border-radius: 3px; background: var(--cell); }
