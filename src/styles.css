@@ -396,3 +396,33 @@ body {
   .stat { grid-template-columns: 20px 1fr auto; }
   .stat__bar, .stat__days { display: none; }
 }
+
+/* --- Settings ----------------------------------------------------------- */
+.settings { display: grid; gap: var(--s-4); }
+.settings__row { display: flex; gap: var(--s-5); flex-wrap: wrap; }
+.settings__row .field__input { width: 16rem; }
+.settings__heading { font-size: var(--fs-md); font-weight: 600; margin: var(--s-3) 0 0; }
+.colors { display: grid; gap: var(--s-2); max-width: 32rem; }
+.colors__row {
+  display: grid; grid-template-columns: 20px 1fr auto auto;
+  align-items: center; gap: var(--s-3);
+}
+.colors__icon { color: var(--cell); display: inline-flex; }
+.colors__label { font-size: var(--fs-sm); }
+.colors__swatch {
+  width: 34px; height: 24px; padding: 0; cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: none;
+}
+.holidays { display: grid; gap: 2px; max-height: 22rem; overflow-y: auto; }
+.holiday {
+  display: grid; grid-template-columns: 15rem 1fr auto auto;
+  align-items: center; gap: var(--s-3);
+  padding: var(--s-2); border-radius: var(--r-sm); font-size: var(--fs-sm);
+}
+.holiday:nth-child(odd) { background: var(--surface-2); }
+.holiday--check { outline: 1px solid var(--accent); }
+.holiday__date { color: var(--fg-muted); }
+.holiday__toggle {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  cursor: pointer; white-space: nowrap; color: var(--fg-muted);
+}

@@ -6,6 +6,7 @@ import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
 import { Router, type ViewState } from './ui/router.js';
 import { S } from './ui/strings.js';
+import { renderSettingsPanel } from './ui/settings-panel.js';
 import { renderLegend, renderStatsPanel } from './ui/stats-panel.js';
 import { renderToolbar } from './ui/toolbar.js';
 import { renderDayView } from './ui/day-view.js';
@@ -100,6 +101,19 @@ async function render(): Promise<void> {
     const [from, to] = rangeFor(router.current);
     const groups = await client.call('summaryRows', from, to);
     renderStatsPanel(panelRoot, summarize(groups, types, activeTheme()));
+  }
+  if (openPanel === 'settings') {
+    const holidays = await client.call('listHolidays', isoDate(year, 1, 1), isoDate(year, 12, 31));
+    renderSettingsPanel(panelRoot, {
+      settings, types, holidays, year, theme: activeTheme(),
+      onSetting: (k, v) => { void client.call('setSetting', k, v).then(render); },
+      onTypeColor: (code, color, colorDark) => {
+        void client.call('updateDayType', code, { color, colorDark }).then(render);
+      },
+      onHoliday: (day, isRestDay) => {
+        void client.call('setHolidayRestDay', day, isRestDay).then(render);
+      },
+    });
   }
   panelRoot.hidden = openPanel === null;
 
