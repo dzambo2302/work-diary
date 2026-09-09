@@ -243,3 +243,60 @@ body {
 .legend { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-4); }
 .legend__item { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--fs-sm); }
 .legend__swatch { width: 12px; height: 12px; border-radius: 3px; background: var(--cell); }
+
+/* --- Month calendar ----------------------------------------------------- */
+.month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--s-2);
+}
+.month__weekday {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-subtle);
+  text-align: center;
+  padding-bottom: var(--s-1);
+}
+.month__cell {
+  appearance: none;
+  text-align: left;
+  font: inherit;
+  color: var(--fg);
+  min-height: 92px;
+  padding: var(--s-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cell, var(--line));
+  border-radius: var(--r-md);
+  background: var(--surface);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--s-1);
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease);
+}
+.month__cell:hover { box-shadow: var(--shadow-2); }
+.month__cell--entry { background: color-mix(in srgb, var(--cell) 12%, var(--surface)); }
+.month__cell--weekend,
+.month__cell--rest { background: var(--surface-2); border-left-color: var(--line); }
+.month__cell--adjacent { opacity: 0.45; }
+.month__head { display: flex; justify-content: space-between; align-items: baseline; }
+.month__dom { font-size: var(--fs-lg); font-weight: 600; }
+.month__hours { font-size: var(--fs-sm); color: var(--fg-muted); }
+.month__body { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.month__icon { color: var(--cell, var(--fg-muted)); display: inline-flex; flex: none; }
+.month__label {
+  font-size: var(--fs-sm);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.month__foot { min-height: 1em; min-width: 0; }
+.month__holiday {
+  font-size: var(--fs-xs); color: var(--fg-muted); font-style: italic;
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.month__note {
+  font-size: var(--fs-xs); color: var(--fg-subtle);
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

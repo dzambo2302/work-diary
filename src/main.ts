@@ -6,6 +6,7 @@ import { el } from './ui/dom.js';
 import { Router } from './ui/router.js';
 import { S } from './ui/strings.js';
 import { renderToolbar } from './ui/toolbar.js';
+import { renderMonthView } from './ui/month-view.js';
 import { renderYearView } from './ui/year-view.js';
 
 document.title = S.appTitle;
@@ -62,12 +63,13 @@ async function render(): Promise<void> {
 
   panelRoot.hidden = openPanel === null;
 
+  const openDay = (day: IsoDate) => router.go({ view: 'day', date: day });
+
   if (router.current.view === 'year') {
-    renderYearView(viewRoot, {
-      year,
-      cellFor,
-      onPick: (day) => router.go({ view: 'day', date: day }),
-    });
+    renderYearView(viewRoot, { year, cellFor, onPick: openDay });
+  } else if (router.current.view === 'month') {
+    const { month } = parseIso(router.current.date);
+    renderMonthView(viewRoot, { year, month, cellFor, onPick: openDay });
   } else {
     viewRoot.replaceChildren(
       el('div', { class: 'card', textContent: `${router.current.view} — ${router.current.date}` }),
