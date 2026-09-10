@@ -20,12 +20,24 @@ describe('ensureYearSeeded', () => {
     expect(seededYears(db)).toEqual([2026]);
   });
 
-  it('uses the default type and hours', () => {
+  it('uses the default type and shift', () => {
     setSetting(db, 'default_type', 'home');
-    setSetting(db, 'default_hours', '7.5');
+    setSetting(db, 'default_start', '07:00');
+    setSetting(db, 'default_end', '15:00');
     ensureYearSeeded(db, 2026);
     const [first] = listEntries(db, '2026-01-02', '2026-01-02');
-    expect(first).toEqual({ day: '2026-01-02', typeCode: 'home', hours: 7.5, note: null });
+    expect(first).toEqual({
+      day: '2026-01-02', typeCode: 'home',
+      startTime: '07:00', endTime: '15:00', hours: 7.5, note: null,
+    });
+  });
+
+  it('falls back to the shipped shift when a setting is nonsense', () => {
+    setSetting(db, 'default_start', 'osem');
+    ensureYearSeeded(db, 2026);
+    expect(listEntries(db, '2026-01-02', '2026-01-02')[0]).toMatchObject({
+      startTime: '06:00', endTime: '14:30', hours: 8,
+    });
   });
 
   it('skips weekends and rest-day holidays but keeps working holidays', () => {
@@ -40,12 +52,16 @@ describe('ensureYearSeeded', () => {
 
   it('is idempotent and never overwrites a user edit', () => {
     ensureYearSeeded(db, 2026);
-    upsertEntry(db, { day: '2026-09-09', typeCode: 'vacation', hours: 4, note: 'pol dňa' });
+    upsertEntry(db, {
+      day: '2026-09-09', typeCode: 'vacation',
+      startTime: '06:00', endTime: '10:00', note: 'pol dňa',
+    });
     const second = ensureYearSeeded(db, 2026);
     expect(second.seeded).toBe(false);
     expect(second.inserted).toBe(0);
     expect(listEntries(db, '2026-09-09', '2026-09-09')[0]).toEqual({
-      day: '2026-09-09', typeCode: 'vacation', hours: 4, note: 'pol dňa',
+      day: '2026-09-09', typeCode: 'vacation',
+      startTime: '06:00', endTime: '10:00', hours: 4, note: 'pol dňa',
     });
   });
 

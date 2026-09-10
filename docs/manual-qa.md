@@ -16,7 +16,9 @@ npm run build
 
 - [ ] Clicking the toolbar icon opens the diary in a tab.
 - [ ] The current year auto-fills: every Mon–Fri that is not a rest-day holiday
-      shows the default type and 8 h.
+      shows the default type and 8 h (a 6:00–14:30 shift).
+- [ ] A diary from an older version still totals the same after upgrading; its
+      days read 06:00 with an end time that reproduces their old hours.
 - [ ] Weekends and rest-day holidays are recessed and carry no entry.
 - [ ] 1 September and (in 2026) 8 May and 15 September show a holiday name but
       are still filled as working days.
@@ -34,13 +36,18 @@ npm run build
 - [ ] `Dnes` returns to today without changing the current view.
 - [ ] Clicking a cell in Rok or Mesiac opens that date in Deň.
 - [ ] Year heatmap: every day type shows its own colour, legend matches.
-- [ ] Hovering a heatmap cell shows a Slovak tooltip with type, hours and note.
+- [ ] Hovering a heatmap cell shows a Slovak tooltip with type, shift, hours
+      and note.
 
 ## Editing
 
 - [ ] Selecting a type saves immediately — navigate away and back to confirm.
-- [ ] Changing hours or the note saves on blur.
-- [ ] `1`–`6` set the type and keep the existing hours.
+- [ ] Od / Do are time pickers; Počet hodín updates as they change and is not
+      typeable.
+- [ ] 6:00–14:30 reads 8 h with the break note; 8:00–10:00 reads 2 h with none.
+- [ ] 22:00–06:30 reads 8 h rather than a negative span.
+- [ ] Changing either time or the note saves on blur.
+- [ ] `1`–`6` set the type and keep the existing shift.
 - [ ] `←` / `→` move a day, `Esc` steps up a level.
 - [ ] `Vymazať záznam` removes the entry; the day then reads *Bez záznamu*.
 - [ ] A weekend or holiday can still be given an entry manually.
@@ -49,8 +56,8 @@ npm run build
 
 - [ ] Štatistika totals match the visible period and re-scope per view.
 - [ ] Slovak plurals are right: `1 deň`, `3 dni`, `12 dní`, `8 hodín`.
-- [ ] Nastavenia: changing the default type or hours affects the *next* year
-      seeded, not existing entries.
+- [ ] Nastavenia: changing the default type or the default shift affects the
+      *next* year seeded, not existing entries.
 - [ ] Changing a type colour repaints the heatmap, month tints, picker and
       legend.
 - [ ] The holiday list pins uncertain rows to the top with *Overte platnosť*;
@@ -70,8 +77,8 @@ npm run build
 - [ ] Záloha downloads a `.sqlite` that opens in a SQLite viewer with the
       expected `day_entry` rows.
 - [ ] The notice then reads `Posledná záloha: <today>`.
-- [ ] CSV opens in Excel with Slovak diacritics intact, split into columns, and
-      `7,5` in the hours column.
+- [ ] CSV opens in Excel with Slovak diacritics intact, split into columns,
+      `06:00` / `14:00` in the Od and Do columns and `7,5` in Hodiny.
 - [ ] Obnoviť asks in Slovak naming the entry count, and restoring reverts a
       change made after the backup.
 

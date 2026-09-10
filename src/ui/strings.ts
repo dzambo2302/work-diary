@@ -1,4 +1,5 @@
 import { SK_MONTHS, SK_WEEKDAYS, dayOfWeek, parseIso, type IsoDate } from '../domain/dates.js';
+import type { TimeOfDay } from '../domain/times.js';
 
 /** Slovak needs the genitive month for a full date: "9. septembra 2026". */
 const SK_MONTHS_GENITIVE = [
@@ -27,6 +28,11 @@ export function hours(n: number): string {
 /** Slovak uses a decimal comma; whole numbers render without a fraction. */
 export function formatHours(n: number): string {
   return String(n).replace('.', ',');
+}
+
+/** A shift as the user reads it: "06:00 - 14:30". */
+export function formatShift(start: TimeOfDay, end: TimeOfDay): string {
+  return `${start} – ${end}`;
 }
 
 export function formatLongDate(d: IsoDate): string {
@@ -62,7 +68,10 @@ export const S = {
   exportMenu: 'Export',
 
   typeLabel: 'Typ dňa',
+  startLabel: 'Od',
+  endLabel: 'Do',
   hoursLabel: 'Počet hodín',
+  breakDeducted: 'Po odpočítaní {minutes} min prestávky',
   noteLabel: 'Poznámka',
   notePlaceholder: 'Voliteľná poznámka k dňu…',
   clearDay: 'Vymazať záznam',
@@ -81,7 +90,10 @@ export const S = {
 
   settingsTitle: 'Nastavenia',
   settingsDefaultType: 'Predvolený typ pracovného dňa',
-  settingsDefaultHours: 'Predvolený počet hodín',
+  settingsDefaultStart: 'Predvolený začiatok',
+  settingsDefaultEnd: 'Predvolený koniec',
+  settingsShiftHint:
+    'Počet hodín sa počíta z časov. Zo zmeny dlhšej ako 6 hodín sa odpočíta 30-minútová prestávka.',
   settingsTheme: 'Vzhľad',
   themeSystem: 'Podľa systému',
   themeLight: 'Svetlý',

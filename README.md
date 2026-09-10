@@ -5,7 +5,8 @@
 [![Latest release](https://img.shields.io/github/v/release/dzambo2302/work-diary)](https://github.com/dzambo2302/work-diary/releases/latest)
 
 A personal work diary as a Chrome/Edge extension. Every Slovak working day is
-pre-filled with a default type and 8 hours; you only touch the exceptions —
+pre-filled with a default type and a default 6:00–14:30 shift; you only touch
+the exceptions —
 vacation, sick days, doctor appointments, work travel, and the split between
 office work and home office.
 
@@ -50,7 +51,12 @@ scripts, and makes no network requests.
 |---|---|
 | **Rok** | The whole year as a heatmap, 31 day columns × 12 month rows, coloured by day type |
 | **Mesiac** | A Mon–Sun calendar with icon, type, hours and note in each cell |
-| **Deň** | A single-day editor — type, hours, note |
+| **Deň** | A single-day editor — type, start and end time, note |
+
+A day is recorded as a shift. The hours follow from the two times: the span
+minus a 30-minute unpaid break once the shift passes six hours, so the default
+6:00–14:30 counts as 8 h. A shift whose end is before its start runs past
+midnight.
 
 Keyboard: `←` / `→` move by day, month or year depending on the view; `1`–`6`
 set the day type in Deň view; `Esc` steps up a level.

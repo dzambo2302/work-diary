@@ -1,7 +1,7 @@
 import type { IsoDate } from '../domain/dates.js';
 import type { DayTypeCode } from '../domain/day-types.js';
 import type {
-  CsvRow, DayEntry, DayTypeRow, HolidayRow, SummaryGroup,
+  CsvRow, DayEntry, DayEntryInput, DayTypeRow, HolidayRow, SummaryGroup,
 } from './repository.js';
 
 export interface RangeData { entries: DayEntry[]; holidays: HolidayRow[] }
@@ -10,7 +10,7 @@ export interface RangeData { entries: DayEntry[]; holidays: HolidayRow[] }
 export interface DiaryApi {
   ensureYearSeeded(year: number): { seeded: boolean; inserted: number };
   loadRange(from: IsoDate, to: IsoDate): RangeData;
-  upsertEntry(entry: DayEntry): void;
+  upsertEntry(entry: DayEntryInput): void;
   deleteEntry(day: IsoDate): void;
   listDayTypes(): DayTypeRow[];
   updateDayType(code: DayTypeCode, patch: { labelSk?: string; color?: string; colorDark?: string }): void;

@@ -1,8 +1,11 @@
 import { daysInMonth, isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
 import { toCsv } from './domain/csv.js';
 import { summarize } from './domain/stats.js';
+import {
+  DEFAULT_END, DEFAULT_START, isTimeOfDay, type TimeOfDay,
+} from './domain/times.js';
 import { DbClient } from './db/rpc.js';
-import type { DayEntry, DayTypeRow } from './db/repository.js';
+import type { DayEntryInput, DayTypeRow } from './db/repository.js';
 import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
 import { Router, type ViewState } from './ui/router.js';
@@ -46,7 +49,8 @@ let openPanel: Panel = null;
 
 // Kept current by render() so handlers installed once always see fresh data.
 let currentTypes: DayTypeRow[] = [];
-let defaultHours = 8;
+let defaultStart: TimeOfDay = DEFAULT_START;
+let defaultEnd: TimeOfDay = DEFAULT_END;
 let cellFor: (day: IsoDate) => DayCell = () => {
   throw new Error('not loaded');
 };
@@ -55,12 +59,14 @@ installKeyboard(router, {
   onTypeIndex: (i) => {
     const type = currentTypes[i];
     if (!type || router.current.view !== 'day') return;
-    // Keep whatever hours the day already has; only the type changes.
-    const entry: DayEntry = {
+    // Keep whatever shift the day already has; only the type changes.
+    const cell = cellFor(router.current.date);
+    const entry: DayEntryInput = {
       day: router.current.date,
       typeCode: type.code,
-      hours: cellFor(router.current.date).hours ?? defaultHours,
-      note: cellFor(router.current.date).note,
+      startTime: cell.startTime ?? defaultStart,
+      endTime: cell.endTime ?? defaultEnd,
+      note: cell.note,
     };
     void client.call('upsertEntry', entry).then(() => { toast(S.saved); return render(); });
   },
@@ -94,7 +100,8 @@ async function render(): Promise<void> {
   // Settings first: the theme must be applied before anything renders, or the
   // toolbar's toggle would offer the theme that is already on screen.
   const settings = await client.call('getSettings');
-  defaultHours = Number(settings.default_hours ?? '8') || 8;
+  defaultStart = isTimeOfDay(settings.default_start) ? settings.default_start : DEFAULT_START;
+  defaultEnd = isTimeOfDay(settings.default_end) ? settings.default_end : DEFAULT_END;
   document.documentElement.dataset.theme =
     settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : '';
 
@@ -190,7 +197,8 @@ async function render(): Promise<void> {
       cell: cellFor(router.current.date),
       types,
       theme: activeTheme(),
-      defaultHours,
+      defaultStart,
+      defaultEnd,
       onSave: (entry) => {
         void client.call('upsertEntry', entry).then(() => { toast(S.saved); return render(); });
       },

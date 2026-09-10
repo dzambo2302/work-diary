@@ -2,6 +2,9 @@ import { isoDate, type IsoDate } from '../domain/dates.js';
 import { isDayTypeCode, type DayTypeCode } from '../domain/day-types.js';
 import { slovakHolidays } from '../domain/holidays-sk.js';
 import { restDaySet, workdaysInYear } from '../domain/workdays.js';
+import {
+  DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours, isTimeOfDay, type TimeOfDay,
+} from '../domain/times.js';
 import { DEFAULT_SETTINGS, MIGRATIONS, dayTypeSeedSql } from './schema.js';
 
 /**
@@ -16,11 +19,18 @@ export interface Db {
   transaction(fn: () => void): void;
 }
 
-export interface DayEntry {
+/** What a caller writes: a shift, plus what kind of day it was. */
+export interface DayEntryInput {
   day: IsoDate;
   typeCode: DayTypeCode;
-  hours: number;
+  startTime: TimeOfDay;
+  endTime: TimeOfDay;
   note: string | null;
+}
+
+/** What a caller reads back. `hours` is derived from the shift, never supplied. */
+export interface DayEntry extends DayEntryInput {
+  hours: number;
 }
 
 export interface HolidayRow {
@@ -42,7 +52,14 @@ export interface DayTypeRow {
 }
 
 export interface SummaryGroup { typeCode: DayTypeCode; days: number; hours: number }
-export interface CsvRow { day: IsoDate; typeLabel: string; hours: number; note: string | null }
+export interface CsvRow {
+  day: IsoDate;
+  typeLabel: string;
+  startTime: TimeOfDay;
+  endTime: TimeOfDay;
+  hours: number;
+  note: string | null;
+}
 
 export function initialize(db: Db): void {
   db.exec('PRAGMA foreign_keys = ON');
@@ -57,12 +74,38 @@ export function initialize(db: Db): void {
       db.exec(m.sql);
       db.exec('INSERT INTO schema_version(version) VALUES (?)', [m.version]);
     }
+    if (current > 0 && current < 2) backfillShiftTimes(db);
     const seed = dayTypeSeedSql();
     for (const bind of seed.binds) db.exec(seed.sql, bind);
     for (const [key, value] of DEFAULT_SETTINGS) {
       db.exec('INSERT OR IGNORE INTO setting(key, value) VALUES (?, ?)', [key, value]);
     }
   });
+}
+
+/**
+ * Schema 1 knew only a number of hours. Give each of its rows the shift that
+ * reproduces exactly that number, so restoring an old backup never moves a
+ * total. Runs inside initialize's transaction, before the defaults are seeded.
+ */
+function backfillShiftTimes(db: Db): void {
+  for (const row of db.all<{ day: IsoDate; hours: number }>('SELECT day, hours FROM day_entry')) {
+    db.exec(
+      'UPDATE day_entry SET start_time = ?, end_time = ? WHERE day = ?',
+      [DEFAULT_START, endTimeForHours(DEFAULT_START, row.hours), row.day],
+    );
+  }
+
+  const legacy = Number(getSetting(db, 'default_hours'));
+  setSetting(db, 'default_start', DEFAULT_START);
+  setSetting(
+    db,
+    'default_end',
+    Number.isFinite(legacy) && legacy > 0
+      ? endTimeForHours(DEFAULT_START, legacy)
+      : DEFAULT_END,
+  );
+  db.exec("DELETE FROM setting WHERE key = 'default_hours'");
 }
 
 export function getSetting(db: Db, key: string): string | undefined {
@@ -114,27 +157,40 @@ export function updateDayType(
   db.exec(`UPDATE day_type SET ${sets.join(', ')} WHERE code = ?`, binds);
 }
 
-interface RawEntry { day: IsoDate; type_code: DayTypeCode; hours: number; note: string | null }
+interface RawEntry {
+  day: IsoDate; type_code: DayTypeCode; start_time: TimeOfDay; end_time: TimeOfDay;
+  hours: number; note: string | null;
+}
 
 export function listEntries(db: Db, from: IsoDate, to: IsoDate): DayEntry[] {
   return db
     .all<RawEntry>(
-      `SELECT day, type_code, hours, note FROM day_entry
+      `SELECT day, type_code, start_time, end_time, hours, note FROM day_entry
        WHERE day BETWEEN ? AND ? ORDER BY day`,
       [from, to],
     )
-    .map((r) => ({ day: r.day, typeCode: r.type_code, hours: r.hours, note: r.note }));
+    .map((r) => ({
+      day: r.day, typeCode: r.type_code, startTime: r.start_time, endTime: r.end_time,
+      hours: r.hours, note: r.note,
+    }));
 }
 
-export function upsertEntry(db: Db, entry: DayEntry): void {
+/** The hours are computed here, so the column can never disagree with the shift. */
+export function upsertEntry(db: Db, entry: DayEntryInput): void {
   db.exec(
-    `INSERT INTO day_entry(day, type_code, hours, note) VALUES (?, ?, ?, ?)
+    `INSERT INTO day_entry(day, type_code, start_time, end_time, hours, note)
+     VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(day) DO UPDATE SET
        type_code  = excluded.type_code,
+       start_time = excluded.start_time,
+       end_time   = excluded.end_time,
        hours      = excluded.hours,
        note       = excluded.note,
        updated_at = datetime('now')`,
-    [entry.day, entry.typeCode, entry.hours, entry.note],
+    [
+      entry.day, entry.typeCode, entry.startTime, entry.endTime,
+      computeHours(entry.startTime, entry.endTime), entry.note,
+    ],
   );
 }
 
@@ -178,12 +234,24 @@ export function summaryRows(db: Db, from: IsoDate, to: IsoDate): SummaryGroup[] 
 }
 
 export function csvRows(db: Db, from: IsoDate, to: IsoDate): CsvRow[] {
-  return db.all<{ day: IsoDate; label_sk: string; hours: number; note: string | null }>(
-    `SELECT e.day, t.label_sk, e.hours, e.note
+  return db.all<{
+    day: IsoDate; label_sk: string; start_time: TimeOfDay; end_time: TimeOfDay;
+    hours: number; note: string | null;
+  }>(
+    `SELECT e.day, t.label_sk, e.start_time, e.end_time, e.hours, e.note
      FROM day_entry e JOIN day_type t ON t.code = e.type_code
      WHERE e.day BETWEEN ? AND ? ORDER BY e.day`,
     [from, to],
-  ).map((r) => ({ day: r.day, typeLabel: r.label_sk, hours: r.hours, note: r.note }));
+  ).map((r) => ({
+    day: r.day, typeLabel: r.label_sk, startTime: r.start_time, endTime: r.end_time,
+    hours: r.hours, note: r.note,
+  }));
+}
+
+/** A stored time that no longer parses falls back to the shipped shift. */
+function shiftSetting(db: Db, key: string, fallback: TimeOfDay): TimeOfDay {
+  const raw = getSetting(db, key);
+  return isTimeOfDay(raw) ? raw : fallback;
 }
 
 export function seededYears(db: Db): number[] {
@@ -212,8 +280,9 @@ export function ensureYearSeeded(db: Db, year: number): { seeded: boolean; inser
 
   const rawType = getSetting(db, 'default_type') ?? 'office';
   const typeCode: DayTypeCode = isDayTypeCode(rawType) ? rawType : 'office';
-  const rawHours = Number(getSetting(db, 'default_hours') ?? '8');
-  const hours = Number.isFinite(rawHours) && rawHours > 0 ? rawHours : 8;
+  const startTime = shiftSetting(db, 'default_start', DEFAULT_START);
+  const endTime = shiftSetting(db, 'default_end', DEFAULT_END);
+  const hours = computeHours(startTime, endTime);
 
   let inserted = 0;
   db.transaction(() => {
@@ -243,9 +312,9 @@ export function ensureYearSeeded(db: Db, year: number): { seeded: boolean; inser
 
     for (const day of workdaysInYear(year, rest)) {
       db.exec(
-        `INSERT OR IGNORE INTO day_entry(day, type_code, hours, note)
-         VALUES (?, ?, ?, NULL)`,
-        [day, typeCode, hours],
+        `INSERT OR IGNORE INTO day_entry(day, type_code, start_time, end_time, hours, note)
+         VALUES (?, ?, ?, ?, ?, NULL)`,
+        [day, typeCode, startTime, endTime, hours],
       );
       inserted += 1;
     }
