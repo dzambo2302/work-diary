@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours,
-  formatTime, isTimeOfDay, parseTime, spanMinutes,
+  DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours, formatTime,
+  isTimeOfDay, maskTimeInput, normalizeTimeInput, parseTime, spanMinutes, stepTime,
 } from '../../src/domain/times.js';
 
 describe('parseTime', () => {
@@ -117,5 +117,60 @@ describe('the shipped defaults', () => {
     expect(DEFAULT_START).toBe('06:00');
     expect(DEFAULT_END).toBe('14:30');
     expect(computeHours(DEFAULT_START, DEFAULT_END)).toBe(8);
+  });
+});
+
+describe('maskTimeInput', () => {
+  it('builds up the colon as digits are typed', () => {
+    expect(maskTimeInput('1')).toBe('1');
+    expect(maskTimeInput('14')).toBe('14');
+    expect(maskTimeInput('143')).toBe('14:3');
+    expect(maskTimeInput('1430')).toBe('14:30');
+  });
+
+  it('keeps an already separated time separated', () => {
+    expect(maskTimeInput('14:30')).toBe('14:30');
+  });
+
+  it('drops anything that is not a digit, and any fifth one', () => {
+    expect(maskTimeInput('1a4b3c0')).toBe('14:30');
+    expect(maskTimeInput('143055')).toBe('14:30');
+    expect(maskTimeInput('')).toBe('');
+  });
+});
+
+describe('normalizeTimeInput', () => {
+  it('accepts a full time typed with or without the colon', () => {
+    expect(normalizeTimeInput('1430', '06:00')).toBe('14:30');
+    expect(normalizeTimeInput('14:30', '06:00')).toBe('14:30');
+    expect(normalizeTimeInput('  14:30  ', '06:00')).toBe('14:30');
+  });
+
+  it('reads a short entry as an hour', () => {
+    expect(normalizeTimeInput('9', '06:00')).toBe('09:00');
+    expect(normalizeTimeInput('14', '06:00')).toBe('14:00');
+  });
+
+  it('reads three digits as h:mm', () => {
+    expect(normalizeTimeInput('930', '06:00')).toBe('09:30');
+  });
+
+  it('falls back rather than inventing a time', () => {
+    expect(normalizeTimeInput('', '06:00')).toBe('06:00');
+    expect(normalizeTimeInput('2530', '06:00')).toBe('06:00');
+    expect(normalizeTimeInput('1265', '06:00')).toBe('06:00');
+    expect(normalizeTimeInput('abc', '06:00')).toBe('06:00');
+  });
+});
+
+describe('stepTime', () => {
+  it('moves by the given minutes', () => {
+    expect(stepTime('06:00', 15)).toBe('06:15');
+    expect(stepTime('06:00', -15)).toBe('05:45');
+  });
+
+  it('wraps around midnight in both directions', () => {
+    expect(stepTime('23:45', 15)).toBe('00:00');
+    expect(stepTime('00:00', -15)).toBe('23:45');
   });
 });

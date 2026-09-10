@@ -64,3 +64,41 @@ export function endTimeForHours(start: TimeOfDay, hours: number): TimeOfDay {
   const span = paid <= BREAK_AFTER_MINUTES ? paid : paid + BREAK_MINUTES;
   return formatTime(parseTime(start) + Math.min(span, MINUTES_PER_DAY - 1));
 }
+
+/**
+ * Chromium renders <input type="time"> in the browser's UI locale and offers no
+ * way to override it, so an en-US browser shows "02:30 PM" however Slovak the
+ * page is. These three keep a plain text field behaving as a 24-hour one.
+ */
+
+const MAX_DIGITS = 4;
+
+const digitsOf = (raw: string): string => raw.replace(/\D/g, '').slice(0, MAX_DIGITS);
+
+/** What the field shows mid-typing: digits, with the colon appearing at the third. */
+export function maskTimeInput(raw: string): string {
+  const d = digitsOf(raw);
+  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
+}
+
+/**
+ * What the field settles on when the user leaves it. One or two digits are an
+ * hour, three or four are h:mm. Anything out of range returns the fallback —
+ * snapping back to the last good value beats silently storing a typo.
+ */
+export function normalizeTimeInput(raw: string, fallback: TimeOfDay): TimeOfDay {
+  const d = digitsOf(raw.trim());
+  if (d.length === 0) return fallback;
+
+  const [hours, minutes] = d.length <= 2
+    ? [Number(d), 0]
+    : [Number(d.slice(0, d.length - 2)), Number(d.slice(-2))];
+
+  if (hours > 23 || minutes > 59) return fallback;
+  return formatTime(hours * 60 + minutes);
+}
+
+/** Arrow-key stepping, wrapping at midnight the way the native control did. */
+export function stepTime(t: TimeOfDay, minutes: number): TimeOfDay {
+  return formatTime(parseTime(t) + minutes);
+}

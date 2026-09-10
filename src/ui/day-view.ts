@@ -1,8 +1,9 @@
 import type { IsoDate } from '../domain/dates.js';
 import { iconSvg } from '../domain/icons.js';
 import type { DayEntryInput, DayTypeRow } from '../db/repository.js';
-import { computeHours, isTimeOfDay, spanMinutes, type TimeOfDay } from '../domain/times.js';
+import { computeHours, spanMinutes, type TimeOfDay } from '../domain/times.js';
 import { el } from './dom.js';
+import { timeField } from './time-field.js';
 import type { DayCell } from './day-model.js';
 import { S, formatHours } from './strings.js';
 
@@ -21,12 +22,14 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
   const { cell, types, theme } = ctx;
   let selected = cell.typeCode;
 
-  // Quarter-hour steps keep totals on the same grid the old hours field used.
-  const timeInput = (id: string, value: TimeOfDay) =>
-    el('input', { class: 'field__input field__input--time', type: 'time', step: '900', id, value });
-
-  const startInput = timeInput('start', cell.startTime ?? ctx.defaultStart);
-  const endInput = timeInput('end', cell.endTime ?? ctx.defaultEnd);
+  const startField = timeField({
+    id: 'start', label: S.startLabel, value: cell.startTime ?? ctx.defaultStart,
+    onInput: syncTotal, onCommit: save,
+  });
+  const endField = timeField({
+    id: 'end', label: S.endLabel, value: cell.endTime ?? ctx.defaultEnd,
+    onInput: syncTotal, onCommit: save,
+  });
   const total = el('strong', { class: 'shift__total' });
   const breakHint = el('span', { class: 'shift__hint' });
 
@@ -59,12 +62,9 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
     });
   }
 
-  /** An empty or half-typed time input falls back to the default rather than NaN. */
+  /** The fields never hand out half-typed text, so this is always a real shift. */
   function shift(): [TimeOfDay, TimeOfDay] {
-    return [
-      isTimeOfDay(startInput.value) ? startInput.value : ctx.defaultStart,
-      isTimeOfDay(endInput.value) ? endInput.value : ctx.defaultEnd,
-    ];
+    return [startField.value(), endField.value()];
   }
 
   /** The hours are output, never input — they follow the two times on every keystroke. */
@@ -81,9 +81,6 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
   function save(): void {
     if (!selected) return;
     const [startTime, endTime] = shift();
-    startInput.value = startTime;
-    endInput.value = endTime;
-    syncTotal();
     const note = noteInput.value.trim();
     ctx.onSave({
       day: ctx.day, typeCode: selected, startTime, endTime,
@@ -91,10 +88,6 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
     });
   }
 
-  for (const input of [startInput, endInput]) {
-    input.addEventListener('input', syncTotal);
-    input.addEventListener('change', save);
-  }
   noteInput.addEventListener('change', save);
   syncTotal();
 
@@ -123,11 +116,11 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
         el('div', { class: 'shift' }, [
           el('label', { class: 'field', htmlFor: 'start' }, [
             el('span', { class: 'field__label', textContent: S.startLabel }),
-            startInput,
+            startField.input,
           ]),
           el('label', { class: 'field', htmlFor: 'end' }, [
             el('span', { class: 'field__label', textContent: S.endLabel }),
-            endInput,
+            endField.input,
           ]),
           el('div', { class: 'field shift__result', 'aria-live': 'polite' }, [
             el('span', { class: 'field__label', textContent: S.hoursLabel }),

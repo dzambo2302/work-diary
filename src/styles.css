@@ -352,7 +352,7 @@ body {
   transition: border-color var(--dur-fast) var(--ease);
 }
 .field__input--area { width: 100%; resize: vertical; }
-.field__input--time { width: 8rem; }
+.field__input--time { width: 6.5rem; font-variant-numeric: tabular-nums; }
 .field__input:hover { border-color: var(--fg-subtle); }
 
 .picker { display: flex; flex-wrap: wrap; gap: var(--s-2); }
@@ -419,7 +419,7 @@ body {
 .settings { display: grid; gap: var(--s-4); }
 .settings__row { display: flex; gap: var(--s-5); flex-wrap: wrap; }
 .settings__row .field__input { width: 16rem; }
-.settings__row .field__input[type="time"] { width: 8rem; }
+.settings__row .field__input--time { width: 6.5rem; }
 .settings__heading { font-size: var(--fs-md); font-weight: 600; margin: var(--s-3) 0 0; }
 .colors { display: grid; gap: var(--s-2); max-width: 32rem; }
 .colors__row {

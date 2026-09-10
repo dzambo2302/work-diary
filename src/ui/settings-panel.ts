@@ -6,6 +6,7 @@ import {
   DEFAULT_END, DEFAULT_START, computeHours, isTimeOfDay, type TimeOfDay,
 } from '../domain/times.js';
 import { el } from './dom.js';
+import { timeField } from './time-field.js';
 import { S, formatHours, formatLongDate } from './strings.js';
 
 export interface SettingsContext {
@@ -31,20 +32,18 @@ export function renderSettingsPanel(root: HTMLElement, ctx: SettingsContext): vo
   defaultType.addEventListener('change', () => ctx.onSetting('default_type', defaultType.value));
 
   // The seeded working day is a shift now; its hours follow from the two times.
-  const shiftInput = (id: string, key: string, fallback: TimeOfDay) => {
+  const shiftField = (id: string, key: string, label: string, fallback: TimeOfDay) => {
     const stored = ctx.settings[key];
-    const input = el('input', {
-      class: 'field__input', id, type: 'time', step: '900',
-      value: isTimeOfDay(stored) ? stored : fallback,
+    return timeField({
+      id, label, value: isTimeOfDay(stored) ? stored : fallback,
+      onCommit: (value) => ctx.onSetting(key, value),
     });
-    input.addEventListener('change', () => {
-      ctx.onSetting(key, isTimeOfDay(input.value) ? input.value : fallback);
-    });
-    return input;
   };
-  const defaultStart = shiftInput('default-start', 'default_start', DEFAULT_START);
-  const defaultEnd = shiftInput('default-end', 'default_end', DEFAULT_END);
-  const defaultHours = formatHours(computeHours(defaultStart.value, defaultEnd.value));
+  const defaultStart =
+    shiftField('default-start', 'default_start', S.settingsDefaultStart, DEFAULT_START);
+  const defaultEnd =
+    shiftField('default-end', 'default_end', S.settingsDefaultEnd, DEFAULT_END);
+  const defaultHours = formatHours(computeHours(defaultStart.value(), defaultEnd.value()));
 
   const theme = el('select', { class: 'field__input', id: 'theme' }, [
     el('option', { value: 'system', textContent: S.themeSystem }),
@@ -113,11 +112,11 @@ export function renderSettingsPanel(root: HTMLElement, ctx: SettingsContext): vo
         ]),
         el('label', { class: 'field', htmlFor: 'default-start' }, [
           el('span', { class: 'field__label', textContent: S.settingsDefaultStart }),
-          defaultStart,
+          defaultStart.input,
         ]),
         el('label', { class: 'field', htmlFor: 'default-end' }, [
           el('span', { class: 'field__label', textContent: S.settingsDefaultEnd }),
-          defaultEnd,
+          defaultEnd.input,
         ]),
         el('div', { class: 'field' }, [
           el('span', { class: 'field__label', textContent: S.hoursLabel }),

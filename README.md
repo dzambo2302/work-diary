@@ -23,7 +23,7 @@ and load the folder via *Load unpacked* — see [Install](#install).
 ```bash
 npm install
 npm run build     # tsc --noEmit && vite build -> dist/
-npm test          # 88 unit tests
+npm test          # 126 unit tests
 ```
 
 ## Package
@@ -37,10 +37,18 @@ Store or for *Load unpacked* after extracting.
 
 ## Install
 
-1. Open `chrome://extensions`
-2. Turn on **Developer mode**
-3. **Load unpacked** → select the `dist/` folder
-4. Click the toolbar icon to open the diary in a tab
+Chrome and Edge only install unpacked folders or Web Store items — a `.zip`
+cannot be dragged onto the extensions page, so extract it first.
+
+1. Extract the release `.zip` (or run `npm run build`, which writes `dist/`)
+2. Open `chrome://extensions` — on Edge, `edge://extensions`
+3. Turn on **Developer mode** (Edge: bottom-left toggle)
+4. **Load unpacked** → select the extracted folder, the one holding
+   `manifest.json` directly
+5. Click the toolbar icon to open the diary in a tab
+
+The folder has to stay where it is; the browser loads it from that path on every
+start.
 
 The extension requests **no permissions**, has no host access, no content
 scripts, and makes no network requests.

@@ -42,8 +42,12 @@ npm run build
 ## Editing
 
 - [ ] Selecting a type saves immediately — navigate away and back to confirm.
-- [ ] Od / Do are time pickers; Počet hodín updates as they change and is not
-      typeable.
+- [ ] Od / Do show a 24-hour clock — never AM/PM — whatever language the
+      browser's own UI is set to.
+- [ ] Typing `1430` into Do fills in the colon; Enter or leaving the field saves.
+- [ ] `↑` / `↓` in Od or Do step by 15 minutes and wrap at midnight.
+- [ ] A nonsense entry such as `2599` snaps back to the previous time on blur.
+- [ ] Počet hodín updates as the times change and is not typeable.
 - [ ] 6:00–14:30 reads 8 h with the break note; 8:00–10:00 reads 2 h with none.
 - [ ] 22:00–06:30 reads 8 h rather than a negative span.
 - [ ] Changing either time or the note saves on blur.
