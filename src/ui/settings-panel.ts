@@ -1,9 +1,10 @@
 import type { IsoDate } from '../domain/dates.js';
 import type { DayTypeCode } from '../domain/day-types.js';
 import type { DayTypeRow, HolidayRow } from '../db/repository.js';
+import { parseStandardHours } from '../domain/balance.js';
 import { iconSvg } from '../domain/icons.js';
 import {
-  DEFAULT_END, DEFAULT_START, computeHours, isTimeOfDay, type TimeOfDay,
+  DEFAULT_END, DEFAULT_START, computeHours, isTimeOfDay, parseBreakMinutes, type TimeOfDay,
 } from '../domain/times.js';
 import { el } from './dom.js';
 import { timeField } from './time-field.js';
@@ -16,6 +17,8 @@ export interface SettingsContext {
   year: number;
   theme: 'light' | 'dark';
   onSetting(key: string, value: string): void;
+  /** Not a plain setting: it also recomputes the hours of every stored day. */
+  onBreakMinutes(minutes: number): void;
   onTypeColor(code: DayTypeCode, color: string, colorDark: string): void;
   onHoliday(day: IsoDate, isRestDay: boolean): void;
 }
@@ -43,7 +46,50 @@ export function renderSettingsPanel(root: HTMLElement, ctx: SettingsContext): vo
     shiftField('default-start', 'default_start', S.settingsDefaultStart, DEFAULT_START);
   const defaultEnd =
     shiftField('default-end', 'default_end', S.settingsDefaultEnd, DEFAULT_END);
-  const defaultHours = formatHours(computeHours(defaultStart.value(), defaultEnd.value()));
+
+  /**
+   * A short numeric field that never hands out a value the domain rejects: on
+   * commit the text goes through the same parser the database uses, and the
+   * field snaps to whatever came back — the way the time fields already behave.
+   */
+  const numberField = (
+    id: string,
+    value: number,
+    parse: (raw: string) => number,
+    commit: (value: number) => void,
+    label: string,
+  ) => {
+    const input = el('input', {
+      class: 'field__input field__input--num', id, type: 'text',
+      inputMode: 'decimal', autocomplete: 'off', spellcheck: false, maxLength: 5,
+      'aria-label': label, value: formatHours(value),
+    });
+    input.addEventListener('change', () => {
+      const next = parse(input.value);
+      input.value = formatHours(next);
+      commit(next);
+    });
+    return input;
+  };
+
+  const breakMinutes = parseBreakMinutes(ctx.settings.break_minutes);
+  const standardHours = numberField(
+    'standard-hours',
+    parseStandardHours(ctx.settings.standard_hours),
+    (raw) => parseStandardHours(raw, parseStandardHours(ctx.settings.standard_hours)),
+    (value) => ctx.onSetting('standard_hours', String(value)),
+    S.settingsStandardHours,
+  );
+  const breakField = numberField(
+    'break-minutes',
+    breakMinutes,
+    (raw) => parseBreakMinutes(raw, breakMinutes),
+    (value) => ctx.onBreakMinutes(value),
+    S.settingsBreak,
+  );
+
+  const defaultHours =
+    formatHours(computeHours(defaultStart.value(), defaultEnd.value(), breakMinutes));
 
   const theme = el('select', { class: 'field__input', id: 'theme' }, [
     el('option', { value: 'system', textContent: S.themeSystem }),
@@ -118,16 +164,33 @@ export function renderSettingsPanel(root: HTMLElement, ctx: SettingsContext): vo
           el('span', { class: 'field__label', textContent: S.settingsDefaultEnd }),
           defaultEnd.input,
         ]),
+        el('label', { class: 'field', htmlFor: 'break-minutes' }, [
+          el('span', { class: 'field__label', textContent: S.settingsBreak }),
+          breakField,
+        ]),
         el('div', { class: 'field' }, [
           el('span', { class: 'field__label', textContent: S.hoursLabel }),
           el('strong', { class: 'shift__total', textContent: `${defaultHours} h` }),
+        ]),
+        el('label', { class: 'field', htmlFor: 'standard-hours' }, [
+          el('span', { class: 'field__label', textContent: S.settingsStandardHours }),
+          standardHours,
         ]),
         el('label', { class: 'field', htmlFor: 'theme' }, [
           el('span', { class: 'field__label', textContent: S.settingsTheme }),
           theme,
         ]),
       ]),
-      el('p', { class: 'subtle', textContent: S.settingsShiftHint }),
+      el('p', {
+        class: 'subtle',
+        textContent: [
+          breakMinutes > 0
+            ? S.settingsShiftHint.replace('{minutes}', String(breakMinutes))
+            : S.settingsShiftHintNoBreak,
+          S.settingsBreakWarning,
+        ].join(' '),
+      }),
+      el('p', { class: 'subtle', textContent: S.settingsStandardHoursHint }),
       el('h3', { class: 'settings__heading', textContent: S.settingsColors }),
       colors,
       el('h3', { class: 'settings__heading', textContent: `${S.settingsHolidays} ${ctx.year}` }),

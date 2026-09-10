@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { restDaySet, workdaysInYear } from '../../src/domain/workdays.js';
+import { restDaySet, workdaysInRange, workdaysInYear } from '../../src/domain/workdays.js';
 
 describe('restDaySet', () => {
   it('contains only the rest days of the year', () => {
@@ -34,5 +34,33 @@ describe('workdaysInYear', () => {
 
   it('counts the weekdays of the leap year 2024', () => {
     expect(workdaysInYear(2024, new Set())).toHaveLength(262);
+  });
+});
+
+describe('workdaysInRange', () => {
+  it('covers the range inclusively', () => {
+    const days = workdaysInRange('2026-09-01', '2026-09-30', new Set());
+    expect(days).toHaveLength(22);
+    expect(days[0]).toBe('2026-09-01');
+    expect(days.at(-1)).toBe('2026-09-30');
+  });
+
+  it('excludes weekends and rest days inside the range', () => {
+    const days = workdaysInRange('2026-01-01', '2026-01-31', restDaySet(2026));
+    expect(days).not.toContain('2026-01-01'); // Deň vzniku SR, a Thursday
+    expect(days).not.toContain('2026-01-06'); // Traja králi, a Tuesday
+    expect(days).not.toContain('2026-01-03'); // Saturday
+    expect(days).toContain('2026-01-02');
+    expect(days).toHaveLength(20);
+  });
+
+  it('honours a rest-day set the user has overridden', () => {
+    const days = workdaysInRange('2026-09-01', '2026-09-30', new Set(['2026-09-15']));
+    expect(days).not.toContain('2026-09-15');
+    expect(days).toHaveLength(21);
+  });
+
+  it('is empty when the range runs backwards', () => {
+    expect(workdaysInRange('2026-09-30', '2026-09-01', new Set())).toEqual([]);
   });
 });

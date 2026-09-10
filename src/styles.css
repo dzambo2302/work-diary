@@ -36,6 +36,7 @@
   --accent-fg: #ffffff;
   --focus: #2563eb;
   --danger: #dc2626;
+  --ok: #15803d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,6 +53,7 @@
     --accent-fg: #0f1115;
     --focus: #60a5fa;
     --danger: #f87171;
+    --ok: #4ade80;
   }
 }
 
@@ -68,6 +70,7 @@
   --accent-fg: #0f1115;
   --focus: #60a5fa;
   --danger: #f87171;
+  --ok: #4ade80;
 }
 
 * { box-sizing: border-box; }
@@ -388,6 +391,47 @@ body {
 
 /* --- Statistics --------------------------------------------------------- */
 .panel__title { font-size: var(--fs-lg); font-weight: 600; margin: 0 0 var(--s-3); }
+.panel__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s-3); margin: 0 0 var(--s-3); flex-wrap: wrap;
+}
+.panel__head .panel__title { margin: 0; }
+.panel__period { font-size: var(--fs-sm); }
+
+/* The month's fond against what has actually been put in against it. */
+.balance {
+  display: grid; gap: var(--s-1);
+  /* A narrow column: a label and its figure are easier to pair up when the eye
+     does not have to cross the whole panel to get from one to the other. */
+  max-width: 34rem;
+  margin: 0 0 var(--s-4); padding: var(--s-3);
+  background: var(--surface-2); border-radius: var(--r-md);
+}
+.balance__row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s-3); font-size: var(--fs-sm);
+}
+.balance__label { color: var(--fg-muted); }
+.balance__value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.balance__row--sum .balance__label,
+.balance__row--sum .balance__value { color: var(--fg); font-weight: 600; }
+.balance__row--delta {
+  margin-top: var(--s-1); padding-top: var(--s-2);
+  border-top: 1px solid var(--line-strong);
+  font-size: var(--fs-md);
+}
+.balance__row--delta .balance__label { color: var(--fg); font-weight: 600; }
+.balance__row--delta .balance__value { font-weight: 700; }
+.balance__row--over .balance__value { color: var(--ok); }
+.balance__row--under .balance__value { color: var(--danger); }
+.balance__heading {
+  margin: var(--s-3) 0 0; padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--fg-subtle);
+}
+.balance .subtle { margin: var(--s-2) 0 0; }
+
 .stats { display: grid; gap: var(--s-2); }
 .stat {
   display: grid;
@@ -417,9 +461,12 @@ body {
 
 /* --- Settings ----------------------------------------------------------- */
 .settings { display: grid; gap: var(--s-4); }
+.settings .subtle { margin: 0; }
 .settings__row { display: flex; gap: var(--s-5); flex-wrap: wrap; }
 .settings__row .field__input { width: 16rem; }
 .settings__row .field__input--time { width: 6.5rem; }
+.settings__row .field__input--num { width: 6.5rem; }
+.field__input--num { font-variant-numeric: tabular-nums; text-align: right; }
 .settings__heading { font-size: var(--fs-md); font-weight: 600; margin: var(--s-3) 0 0; }
 .colors { display: grid; gap: var(--s-2); max-width: 32rem; }
 .colors__row {

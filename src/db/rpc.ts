@@ -18,6 +18,8 @@ export interface DiaryApi {
   setHolidayRestDay(day: IsoDate, isRestDay: boolean): void;
   getSettings(): Record<string, string>;
   setSetting(key: string, value: string): void;
+  /** Its own method, not a setting: it also rewrites every entry's hours. */
+  setBreakMinutes(minutes: number): void;
   summaryRows(from: IsoDate, to: IsoDate): SummaryGroup[];
   csvRows(from: IsoDate, to: IsoDate): CsvRow[];
   exportDb(): Promise<Uint8Array>;

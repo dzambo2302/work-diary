@@ -6,9 +6,11 @@ export const DEFAULT_END: TimeOfDay = '14:30';
 /**
  * The unpaid break the Labour Code requires once a shift runs past six hours.
  * Deducting it is what makes the default 6:00–14:30 shift eight hours rather
- * than eight and a half.
+ * than eight and a half. How long the break is is a workplace matter, so it is
+ * a setting; the six-hour threshold that triggers it is the law, so it is not.
  */
 export const BREAK_MINUTES = 30;
+export const MAX_BREAK_MINUTES = 120;
 const BREAK_AFTER_MINUTES = 6 * 60;
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -45,23 +47,44 @@ export function spanMinutes(start: TimeOfDay, end: TimeOfDay): number {
  * hours, and never drags the result back under six — otherwise a 6:15 shift
  * would count for less than a 6:00 one.
  */
-function paidMinutes(span: number): number {
+function paidMinutes(span: number, breakMinutes: number): number {
   if (span <= BREAK_AFTER_MINUTES) return span;
-  return Math.min(span, Math.max(span - BREAK_MINUTES, BREAK_AFTER_MINUTES));
+  return Math.min(span, Math.max(span - breakMinutes, BREAK_AFTER_MINUTES));
 }
 
 /** The hours a day is worth, as stored on the entry and summed by the stats. */
-export function computeHours(start: TimeOfDay, end: TimeOfDay): number {
-  return Math.round((paidMinutes(spanMinutes(start, end)) / 60) * 100) / 100;
+export function computeHours(
+  start: TimeOfDay,
+  end: TimeOfDay,
+  breakMinutes: number = BREAK_MINUTES,
+): number {
+  return Math.round((paidMinutes(spanMinutes(start, end), breakMinutes) / 60) * 100) / 100;
+}
+
+/**
+ * A stored `break_minutes` setting, as a number the shift maths can use.
+ * Anything unusable falls back rather than throwing — a corrupt setting must
+ * never be able to stop the diary from opening.
+ */
+export function parseBreakMinutes(raw: unknown, fallback: number = BREAK_MINUTES): number {
+  const text = String(raw ?? '').trim().replace(',', '.');
+  if (typeof raw !== 'number' && text === '') return fallback; // a cleared field snaps back
+  const n = typeof raw === 'number' ? raw : Number(text);
+  if (!Number.isFinite(n) || n < 0 || n > MAX_BREAK_MINUTES) return fallback;
+  return Math.round(n);
 }
 
 /**
  * The inverse of {@link computeHours}, used to carry an entry written under the
  * old hours-only field over to a start/end pair without changing its total.
  */
-export function endTimeForHours(start: TimeOfDay, hours: number): TimeOfDay {
+export function endTimeForHours(
+  start: TimeOfDay,
+  hours: number,
+  breakMinutes: number = BREAK_MINUTES,
+): TimeOfDay {
   const paid = Math.round(hours * 60);
-  const span = paid <= BREAK_AFTER_MINUTES ? paid : paid + BREAK_MINUTES;
+  const span = paid <= BREAK_AFTER_MINUTES ? paid : paid + breakMinutes;
   return formatTime(parseTime(start) + Math.min(span, MINUTES_PER_DAY - 1));
 }
 

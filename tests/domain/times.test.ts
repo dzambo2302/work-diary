@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours, formatTime,
-  isTimeOfDay, maskTimeInput, normalizeTimeInput, parseTime, spanMinutes, stepTime,
+  BREAK_MINUTES, DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours, formatTime,
+  isTimeOfDay, maskTimeInput, normalizeTimeInput, parseBreakMinutes, parseTime,
+  spanMinutes, stepTime,
 } from '../../src/domain/times.js';
 
 describe('parseTime', () => {
@@ -172,5 +173,53 @@ describe('stepTime', () => {
   it('wraps around midnight in both directions', () => {
     expect(stepTime('23:45', 15)).toBe('00:00');
     expect(stepTime('00:00', -15)).toBe('23:45');
+  });
+});
+
+describe('a configurable break', () => {
+  it('deducts the break it is given instead of the shipped thirty minutes', () => {
+    expect(computeHours('06:00', '14:30', 45)).toBe(7.75);
+    expect(computeHours('06:00', '14:30', 15)).toBe(8.25);
+  });
+
+  it('deducts nothing when the break is set to zero', () => {
+    expect(computeHours('06:00', '14:30', 0)).toBe(8.5);
+  });
+
+  it('still leaves a shift of six hours or less alone', () => {
+    expect(computeHours('08:00', '14:00', 60)).toBe(6);
+  });
+
+  it('still never drags a shift back under six hours', () => {
+    expect(computeHours('08:00', '14:30', 60)).toBe(6);
+  });
+
+  it('falls back to the shipped break when none is given', () => {
+    expect(computeHours('06:00', '14:30')).toBe(computeHours('06:00', '14:30', BREAK_MINUTES));
+  });
+
+  it('round-trips through endTimeForHours under the same break', () => {
+    expect(endTimeForHours('06:00', 7.75, 45)).toBe('14:30');
+    expect(computeHours('06:00', endTimeForHours('06:00', 7.75, 45), 45)).toBe(7.75);
+  });
+});
+
+describe('parseBreakMinutes', () => {
+  it('accepts whole minutes within range', () => {
+    expect(parseBreakMinutes('45')).toBe(45);
+    expect(parseBreakMinutes('0')).toBe(0);
+    expect(parseBreakMinutes(120)).toBe(120);
+  });
+
+  it('rounds a fractional entry to whole minutes', () => {
+    expect(parseBreakMinutes('30,5')).toBe(31);
+  });
+
+  it('falls back on anything it cannot use', () => {
+    expect(parseBreakMinutes('')).toBe(BREAK_MINUTES);
+    expect(parseBreakMinutes('obed')).toBe(BREAK_MINUTES);
+    expect(parseBreakMinutes(-5)).toBe(BREAK_MINUTES);
+    expect(parseBreakMinutes(121)).toBe(BREAK_MINUTES);
+    expect(parseBreakMinutes(undefined)).toBe(BREAK_MINUTES);
   });
 });

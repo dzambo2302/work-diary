@@ -82,9 +82,13 @@ scripts, and makes no network requests.
 | **Deň** | A single-day editor — type, start and end time, note |
 
 A day is recorded as a shift. The hours follow from the two times: the span
-minus a 30-minute unpaid break once the shift passes six hours, so the default
-6:00–14:30 counts as 8 h. A shift whose end is before its start runs past
-midnight.
+minus an unpaid break once the shift passes six hours, so the default 6:00–14:30
+counts as 8 h. A shift whose end is before its start runs past midnight.
+
+The break defaults to 30 minutes and is set in **Nastavenia → Prestávka (min)**.
+Changing it recomputes the hours of every day already recorded, so the stored
+total never disagrees with the two times beside it. The six-hour threshold that
+triggers the break is the Labour Code's, and is not configurable.
 
 Keyboard: `←` / `→` move by day, month or year depending on the view; `1`–`6`
 set the day type in Deň view; `Esc` steps up a level.
@@ -92,6 +96,31 @@ set the day type in Deň view; `Esc` steps up a level.
 The sun/moon button in the toolbar toggles light and dark. **Nastavenia →
 Vzhľad** additionally offers *Podľa systému*, which follows the OS setting. The
 choice is stored in the database, so it survives reloads.
+
+## Fond pracovného času and nadčas
+
+**Štatistika** opens over whatever period is on screen — a month or a whole year
+— and leads with the balance:
+
+| Row | What it is |
+|---|---|
+| **Fond pracovného času** | Working days in the period × the contracted day. Mon–Fri, minus the rest days in the holiday table, so your own corrections there govern it |
+| **Odpracované** | Hours actually worked: kancelária, home office and pracovná cesta, at their real shift length |
+| **Náhrady** | Dovolenka, PN and lekár, each credited a whole contracted day whatever the shift says — a two-hour visit to the doctor still covers the day |
+| **Nadčas** / **Chýba do fondu** | What is credited, minus the fond |
+
+The contracted day is **Nastavenia → Denný úväzok (h)**, 8 by default. It is
+deliberately separate from the default shift: if your shift is 8,5 h and your
+úväzok is 8, every day is half an hour of overtime, which is the point.
+
+Work on a Saturday or on a rest day adds to what is credited while adding
+nothing to the fond, so it lands in nadčas whole. A working day with no entry
+credits nothing and shows as a shortfall.
+
+Because the diary pre-fills every working day of the year with the default
+shift, the figure for a month still running is a forecast. A second block gives
+the same figures **k dnešku** — up to and including today — which is the number
+that has actually happened.
 
 ## Where the data lives — and how to not lose it
 

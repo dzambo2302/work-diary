@@ -1,5 +1,6 @@
+import { STANDARD_HOURS } from '../domain/balance.js';
 import { DAY_TYPES } from '../domain/day-types.js';
-import { DEFAULT_END, DEFAULT_START } from '../domain/times.js';
+import { BREAK_MINUTES, DEFAULT_END, DEFAULT_START } from '../domain/times.js';
 
 export const SCHEMA_VERSION = 2;
 
@@ -50,10 +51,16 @@ export const MIGRATIONS: readonly { version: number; sql: string }[] = [
   },
 ];
 
+/**
+ * Seeded with INSERT OR IGNORE on every open, so a key added here reaches a
+ * database that already exists without needing a migration of its own.
+ */
 export const DEFAULT_SETTINGS: readonly [string, string][] = [
   ['default_type', 'office'],
   ['default_start', DEFAULT_START],
   ['default_end', DEFAULT_END],
+  ['standard_hours', String(STANDARD_HOURS)],
+  ['break_minutes', String(BREAK_MINUTES)],
   ['theme', 'system'],
   ['seeded_years', ''],
   ['last_backup_at', ''],

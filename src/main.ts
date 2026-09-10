@@ -1,15 +1,17 @@
+import { balanceEntries, parseStandardHours, rangeBalance } from './domain/balance.js';
 import { daysInMonth, isoDate, parseIso, todayIso, type IsoDate } from './domain/dates.js';
 import { toCsv } from './domain/csv.js';
 import { summarize } from './domain/stats.js';
 import {
-  DEFAULT_END, DEFAULT_START, isTimeOfDay, type TimeOfDay,
+  BREAK_MINUTES, DEFAULT_END, DEFAULT_START, isTimeOfDay, parseBreakMinutes, type TimeOfDay,
 } from './domain/times.js';
+import { workdaysInRange } from './domain/workdays.js';
 import { DbClient } from './db/rpc.js';
 import type { DayEntryInput, DayTypeRow } from './db/repository.js';
 import { buildDayIndex, type DayCell } from './ui/day-model.js';
 import { el } from './ui/dom.js';
 import { Router, type ViewState } from './ui/router.js';
-import { S, days as skDays } from './ui/strings.js';
+import { S, days as skDays, formatMonthTitle } from './ui/strings.js';
 import { download, renderExportPanel } from './ui/export.js';
 import { renderSettingsPanel } from './ui/settings-panel.js';
 import { renderLegend, renderStatsPanel } from './ui/stats-panel.js';
@@ -51,6 +53,7 @@ let openPanel: Panel = null;
 let currentTypes: DayTypeRow[] = [];
 let defaultStart: TimeOfDay = DEFAULT_START;
 let defaultEnd: TimeOfDay = DEFAULT_END;
+let breakMinutes = BREAK_MINUTES;
 let cellFor: (day: IsoDate) => DayCell = () => {
   throw new Error('not loaded');
 };
@@ -88,6 +91,14 @@ function rangeFor(state: ViewState): [IsoDate, IsoDate] {
   return [state.date, state.date];
 }
 
+/** The period the stats panel is reporting on, spelled out for its header. */
+function periodLabel(state: ViewState): string {
+  const { year, month } = parseIso(state.date);
+  if (state.view === 'year') return String(year);
+  if (state.view === 'month') return formatMonthTitle(year, month);
+  return state.date;
+}
+
 function togglePanel(p: Exclude<Panel, null>): void {
   openPanel = openPanel === p ? null : p;
   void render();
@@ -102,6 +113,7 @@ async function render(): Promise<void> {
   const settings = await client.call('getSettings');
   defaultStart = isTimeOfDay(settings.default_start) ? settings.default_start : DEFAULT_START;
   defaultEnd = isTimeOfDay(settings.default_end) ? settings.default_end : DEFAULT_END;
+  breakMinutes = parseBreakMinutes(settings.break_minutes);
   document.documentElement.dataset.theme =
     settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : '';
 
@@ -128,13 +140,28 @@ async function render(): Promise<void> {
   if (openPanel === 'stats') {
     const [from, to] = rangeFor(router.current);
     const groups = await client.call('summaryRows', from, to);
-    renderStatsPanel(panelRoot, summarize(groups, types, activeTheme()));
+    // The holiday table is the authority on what is a working day: it carries
+    // the user's own corrections, in both directions, over the computed set.
+    const restDays = new Set(range.holidays.filter((h) => h.isRestDay).map((h) => h.day));
+    renderStatsPanel(panelRoot, {
+      summary: summarize(groups, types, activeTheme()),
+      balance: router.current.view === 'day' ? null : rangeBalance({
+        from, to,
+        workdays: workdaysInRange(from, to, restDays),
+        entries: balanceEntries(range.entries, types),
+        standardHours: parseStandardHours(settings.standard_hours),
+        today: todayIso(),
+      }),
+      today: todayIso(),
+      periodLabel: periodLabel(router.current),
+    });
   }
   if (openPanel === 'settings') {
     const holidays = await client.call('listHolidays', isoDate(year, 1, 1), isoDate(year, 12, 31));
     renderSettingsPanel(panelRoot, {
       settings, types, holidays, year, theme: activeTheme(),
       onSetting: (k, v) => { void client.call('setSetting', k, v).then(render); },
+      onBreakMinutes: (m) => { void client.call('setBreakMinutes', m).then(render); },
       onTypeColor: (code, color, colorDark) => {
         void client.call('updateDayType', code, { color, colorDark }).then(render);
       },
@@ -199,6 +226,7 @@ async function render(): Promise<void> {
       theme: activeTheme(),
       defaultStart,
       defaultEnd,
+      breakMinutes,
       onSave: (entry) => {
         void client.call('upsertEntry', entry).then(() => { toast(S.saved); return render(); });
       },
