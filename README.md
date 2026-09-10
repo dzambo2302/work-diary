@@ -14,9 +14,9 @@ Data lives in a real SQLite database compiled to WebAssembly and stored in the
 browser's Origin Private File System, so aggregation, typed columns and
 file-level backup all come for free. The UI is Slovak throughout.
 
-**Download:** grab the latest `.zip` from
-[Releases](https://github.com/dzambo2302/work-diary/releases/latest), extract it,
-and load the folder via *Load unpacked* — see [Install](#install).
+**Download:** grab `setup.ps1` and the latest `.zip` from
+[Releases](https://github.com/dzambo2302/work-diary/releases/latest) into the
+same folder and run `.\setup.ps1` — see [Install](#install).
 
 ## Build
 
@@ -33,21 +33,41 @@ npm run package     # build + zip -> artifacts/work-diary-<version>.zip
 ```
 
 The archive has `manifest.json` at its root, so it is ready for the Chrome Web
-Store or for *Load unpacked* after extracting.
+Store or for *Load unpacked* after extracting. `scripts/setup.ps1` is copied
+next to it, and both are attached to every GitHub Release.
 
 ## Install
 
-Chrome and Edge only install unpacked folders or Web Store items — a `.zip`
-cannot be dragged onto the extensions page, so extract it first.
+Chrome and Edge take an extension only from their web stores or as an unpacked
+folder — a `.crx` dragged onto the extensions page has been refused since Chrome
+33 — so installing means pointing the browser at a folder that stays put.
+
+### With the setup script
+
+```powershell
+.\setup.ps1                 # install, then open chrome://extensions
+.\setup.ps1 -Browser both   # ...or open both browsers
+.\setup.ps1 -Uninstall      # remove it again
+```
+
+It finds the extension next to itself, in a sibling `work-diary-*.zip`, or in
+`dist/`; copies it to `%LOCALAPPDATA%\WorkDiary\extension`; puts that path on
+the clipboard; and opens the extensions page. Then, once: **Developer mode** on,
+**Load unpacked**, paste the path.
+
+No admin rights and nothing in the registry. `-Destination` puts it elsewhere.
+
+### By hand
 
 1. Extract the release `.zip` (or run `npm run build`, which writes `dist/`)
 2. Open `chrome://extensions` — on Edge, `edge://extensions`
 3. Turn on **Developer mode** (Edge: bottom-left toggle)
-4. **Load unpacked** → select the extracted folder, the one holding
-   `manifest.json` directly
+4. **Load unpacked** → select the folder holding `manifest.json` directly
 5. Click the toolbar icon to open the diary in a tab
 
-The folder has to stay where it is; the browser loads it from that path on every
+Either way the folder has to stay where it is: the browser reads it from that
+path at every start, and deleting it uninstalls the extension. Because this is
+not a Web Store install, Chrome asks about *developer mode extensions* on every
 start.
 
 The extension requests **no permissions**, has no host access, no content

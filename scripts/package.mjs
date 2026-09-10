@@ -8,9 +8,15 @@
  * before zipping, so the archive and the GitHub Release always agree. Chrome
  * only accepts 1-4 dot-separated integers, so the version is validated here
  * rather than failing later at install time.
+ *
+ * setup.ps1 is copied alongside the archive: downloaded into the same folder it
+ * finds the zip on its own, so installing is one command rather than a hunt
+ * through the extensions page.
  */
 import { ZipArchive } from 'archiver';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync, createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync,
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const at = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
@@ -40,6 +46,7 @@ if (version !== manifest.version) {
 }
 
 mkdirSync(OUT_DIR, { recursive: true });
+copyFileSync(at('scripts/setup.ps1'), `${OUT_DIR}/setup.ps1`);
 const outPath = `${OUT_DIR}/work-diary-${version}.zip`;
 
 const output = createWriteStream(outPath);
