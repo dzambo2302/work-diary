@@ -59,12 +59,20 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
-          files: artifacts/*.zip
+          files: |
+            artifacts/*.zip
+            artifacts/setup.ps1
           generate_release_notes: true
           body: |
             Pracovný denník — Chrome/Edge extension, version ${{ steps.version.outputs.version }}.
 
-            **Install:** download the `.zip`, unpack it, then in `chrome://extensions`
-            turn on Developer mode and use *Load unpacked* on the unpacked folder.
+            **Install:** download `setup.ps1` and the `.zip` into the same folder and
+            run `.\setup.ps1`. It unpacks the extension somewhere permanent, copies
+            that path to your clipboard and opens the extensions page for the one-time
+            *Load unpacked* step. `.\setup.ps1 -Uninstall` removes it again.
+
+            By hand instead: unpack the `.zip`, then in `chrome://extensions` (or
+            `edge://extensions`) turn on Developer mode and use *Load unpacked* on the
+            unpacked folder.
 
             Commit: ${{ github.sha }}

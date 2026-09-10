@@ -11,8 +11,14 @@ const types: DayTypeRow[] = DAY_TYPES.map((t) => ({
 const index = (theme: 'light' | 'dark' = 'light') =>
   buildDayIndex(
     [
-      { day: '2026-09-09', typeCode: 'home', hours: 7.5, note: 'šprint' },
-      { day: '2026-09-01', typeCode: 'office', hours: 8, note: null },
+      {
+        day: '2026-09-09', typeCode: 'home',
+        startTime: '06:00', endTime: '14:00', hours: 7.5, note: 'šprint',
+      },
+      {
+        day: '2026-09-01', typeCode: 'office',
+        startTime: '06:00', endTime: '14:30', hours: 8, note: null,
+      },
     ],
     [
       { day: '2026-09-01', name: 'Deň Ústavy Slovenskej republiky', isRestDay: false, needsVerification: false, source: 'seed' },
@@ -26,12 +32,17 @@ describe('buildDayIndex', () => {
   it('describes a day with an entry', () => {
     const c = index()('2026-09-09');
     expect(c).toMatchObject({
-      kind: 'entry', typeCode: 'home', hours: 7.5,
+      kind: 'entry', typeCode: 'home', startTime: '06:00', endTime: '14:00', hours: 7.5,
       note: 'šprint', label: 'Home office', color: '#14B8A6',
     });
     expect(c.tooltip).toContain('Home office');
-    expect(c.tooltip).toContain('7,5');
     expect(c.tooltip).toContain('šprint');
+  });
+
+  it('puts the shift and its total in the tooltip', () => {
+    const c = index()('2026-09-09');
+    expect(c.tooltip).toContain('06:00 – 14:00');
+    expect(c.tooltip).toContain('7,5');
   });
 
   it('uses the dark palette when asked', () => {
@@ -43,6 +54,13 @@ describe('buildDayIndex', () => {
     expect(c.kind).toBe('weekend');
     expect(c.color).toBeNull();
     expect(c.label).toBe('Víkend');
+  });
+
+  it('leaves a day without an entry without a shift', () => {
+    const c = index()('2026-09-12');
+    expect(c.startTime).toBeNull();
+    expect(c.endTime).toBeNull();
+    expect(c.hours).toBeNull();
   });
 
   it('marks rest-day holidays and names them', () => {

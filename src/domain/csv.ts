@@ -8,7 +8,7 @@ import type { CsvRow } from '../db/repository.js';
 const SEP = ';';
 const EOL = '\r\n';
 const BOM = '﻿';
-const HEADER = ['Dátum', 'Deň', 'Typ', 'Hodiny', 'Poznámka'];
+const HEADER = ['Dátum', 'Deň', 'Typ', 'Od', 'Do', 'Hodiny', 'Poznámka'];
 
 function field(value: string): string {
   if (/[;"\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -22,6 +22,8 @@ export function toCsv(rows: readonly CsvRow[]): string {
       r.day,
       SK_WEEKDAYS[dayOfWeek(r.day) - 1]!,
       field(r.typeLabel),
+      r.startTime,
+      r.endTime,
       String(r.hours).replace('.', ','),
       field(r.note ?? ''),
     ].join(SEP));

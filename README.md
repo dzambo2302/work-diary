@@ -5,7 +5,8 @@
 [![Latest release](https://img.shields.io/github/v/release/dzambo2302/work-diary)](https://github.com/dzambo2302/work-diary/releases/latest)
 
 A personal work diary as a Chrome/Edge extension. Every Slovak working day is
-pre-filled with a default type and 8 hours; you only touch the exceptions —
+pre-filled with a default type and a default 6:00–14:30 shift; you only touch
+the exceptions —
 vacation, sick days, doctor appointments, work travel, and the split between
 office work and home office.
 
@@ -13,16 +14,16 @@ Data lives in a real SQLite database compiled to WebAssembly and stored in the
 browser's Origin Private File System, so aggregation, typed columns and
 file-level backup all come for free. The UI is Slovak throughout.
 
-**Download:** grab the latest `.zip` from
-[Releases](https://github.com/dzambo2302/work-diary/releases/latest), extract it,
-and load the folder via *Load unpacked* — see [Install](#install).
+**Download:** grab `setup.ps1` and the latest `.zip` from
+[Releases](https://github.com/dzambo2302/work-diary/releases/latest) into the
+same folder and run `.\setup.ps1` — see [Install](#install).
 
 ## Build
 
 ```bash
 npm install
 npm run build     # tsc --noEmit && vite build -> dist/
-npm test          # 88 unit tests
+npm test          # 126 unit tests
 ```
 
 ## Package
@@ -32,14 +33,42 @@ npm run package     # build + zip -> artifacts/work-diary-<version>.zip
 ```
 
 The archive has `manifest.json` at its root, so it is ready for the Chrome Web
-Store or for *Load unpacked* after extracting.
+Store or for *Load unpacked* after extracting. `scripts/setup.ps1` is copied
+next to it, and both are attached to every GitHub Release.
 
 ## Install
 
-1. Open `chrome://extensions`
-2. Turn on **Developer mode**
-3. **Load unpacked** → select the `dist/` folder
-4. Click the toolbar icon to open the diary in a tab
+Chrome and Edge take an extension only from their web stores or as an unpacked
+folder — a `.crx` dragged onto the extensions page has been refused since Chrome
+33 — so installing means pointing the browser at a folder that stays put.
+
+### With the setup script
+
+```powershell
+.\setup.ps1                 # install, then open chrome://extensions
+.\setup.ps1 -Browser both   # ...or open both browsers
+.\setup.ps1 -Uninstall      # remove it again
+```
+
+It finds the extension next to itself, in a sibling `work-diary-*.zip`, or in
+`dist/`; copies it to `%LOCALAPPDATA%\WorkDiary\extension`; puts that path on
+the clipboard; and opens the extensions page. Then, once: **Developer mode** on,
+**Load unpacked**, paste the path.
+
+No admin rights and nothing in the registry. `-Destination` puts it elsewhere.
+
+### By hand
+
+1. Extract the release `.zip` (or run `npm run build`, which writes `dist/`)
+2. Open `chrome://extensions` — on Edge, `edge://extensions`
+3. Turn on **Developer mode** (Edge: bottom-left toggle)
+4. **Load unpacked** → select the folder holding `manifest.json` directly
+5. Click the toolbar icon to open the diary in a tab
+
+Either way the folder has to stay where it is: the browser reads it from that
+path at every start, and deleting it uninstalls the extension. Because this is
+not a Web Store install, Chrome asks about *developer mode extensions* on every
+start.
 
 The extension requests **no permissions**, has no host access, no content
 scripts, and makes no network requests.
@@ -50,7 +79,12 @@ scripts, and makes no network requests.
 |---|---|
 | **Rok** | The whole year as a heatmap, 31 day columns × 12 month rows, coloured by day type |
 | **Mesiac** | A Mon–Sun calendar with icon, type, hours and note in each cell |
-| **Deň** | A single-day editor — type, hours, note |
+| **Deň** | A single-day editor — type, start and end time, note |
+
+A day is recorded as a shift. The hours follow from the two times: the span
+minus a 30-minute unpaid break once the shift passes six hours, so the default
+6:00–14:30 counts as 8 h. A shift whose end is before its start runs past
+midnight.
 
 Keyboard: `←` / `→` move by day, month or year depending on the view; `1`–`6`
 set the day type in Deň view; `Esc` steps up a level.

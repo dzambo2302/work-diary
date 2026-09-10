@@ -1,6 +1,7 @@
 import { DAY_TYPES } from '../domain/day-types.js';
+import { DEFAULT_END, DEFAULT_START } from '../domain/times.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const MIGRATIONS: readonly { version: number; sql: string }[] = [
   {
@@ -37,11 +38,22 @@ export const MIGRATIONS: readonly { version: number; sql: string }[] = [
       );
     `,
   },
+  {
+    // A day is a shift, not a bare number. `hours` stays as the derived total so
+    // every aggregate keeps summing one column; rows written by version 1 are
+    // given the times that reproduce their hours by backfillShiftTimes().
+    version: 2,
+    sql: `
+      ALTER TABLE day_entry ADD COLUMN start_time TEXT NOT NULL DEFAULT '${DEFAULT_START}';
+      ALTER TABLE day_entry ADD COLUMN end_time   TEXT NOT NULL DEFAULT '${DEFAULT_END}';
+    `,
+  },
 ];
 
 export const DEFAULT_SETTINGS: readonly [string, string][] = [
   ['default_type', 'office'],
-  ['default_hours', '8'],
+  ['default_start', DEFAULT_START],
+  ['default_end', DEFAULT_END],
   ['theme', 'system'],
   ['seeded_years', ''],
   ['last_backup_at', ''],

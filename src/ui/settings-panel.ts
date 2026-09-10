@@ -2,8 +2,12 @@ import type { IsoDate } from '../domain/dates.js';
 import type { DayTypeCode } from '../domain/day-types.js';
 import type { DayTypeRow, HolidayRow } from '../db/repository.js';
 import { iconSvg } from '../domain/icons.js';
+import {
+  DEFAULT_END, DEFAULT_START, computeHours, isTimeOfDay, type TimeOfDay,
+} from '../domain/times.js';
 import { el } from './dom.js';
-import { S, formatLongDate } from './strings.js';
+import { timeField } from './time-field.js';
+import { S, formatHours, formatLongDate } from './strings.js';
 
 export interface SettingsContext {
   settings: Record<string, string>;
@@ -27,12 +31,19 @@ export function renderSettingsPanel(root: HTMLElement, ctx: SettingsContext): vo
   );
   defaultType.addEventListener('change', () => ctx.onSetting('default_type', defaultType.value));
 
-  const defaultHours = el('input', {
-    class: 'field__input', id: 'default-hours', type: 'number',
-    min: '0', max: '24', step: '0.25', value: ctx.settings.default_hours ?? '8',
-  });
-  defaultHours.addEventListener('change', () =>
-    ctx.onSetting('default_hours', String(Number(defaultHours.value.replace(',', '.')) || 8)));
+  // The seeded working day is a shift now; its hours follow from the two times.
+  const shiftField = (id: string, key: string, label: string, fallback: TimeOfDay) => {
+    const stored = ctx.settings[key];
+    return timeField({
+      id, label, value: isTimeOfDay(stored) ? stored : fallback,
+      onCommit: (value) => ctx.onSetting(key, value),
+    });
+  };
+  const defaultStart =
+    shiftField('default-start', 'default_start', S.settingsDefaultStart, DEFAULT_START);
+  const defaultEnd =
+    shiftField('default-end', 'default_end', S.settingsDefaultEnd, DEFAULT_END);
+  const defaultHours = formatHours(computeHours(defaultStart.value(), defaultEnd.value()));
 
   const theme = el('select', { class: 'field__input', id: 'theme' }, [
     el('option', { value: 'system', textContent: S.themeSystem }),
@@ -99,15 +110,24 @@ export function renderSettingsPanel(root: HTMLElement, ctx: SettingsContext): vo
           el('span', { class: 'field__label', textContent: S.settingsDefaultType }),
           defaultType,
         ]),
-        el('label', { class: 'field', htmlFor: 'default-hours' }, [
-          el('span', { class: 'field__label', textContent: S.settingsDefaultHours }),
-          defaultHours,
+        el('label', { class: 'field', htmlFor: 'default-start' }, [
+          el('span', { class: 'field__label', textContent: S.settingsDefaultStart }),
+          defaultStart.input,
+        ]),
+        el('label', { class: 'field', htmlFor: 'default-end' }, [
+          el('span', { class: 'field__label', textContent: S.settingsDefaultEnd }),
+          defaultEnd.input,
+        ]),
+        el('div', { class: 'field' }, [
+          el('span', { class: 'field__label', textContent: S.hoursLabel }),
+          el('strong', { class: 'shift__total', textContent: `${defaultHours} h` }),
         ]),
         el('label', { class: 'field', htmlFor: 'theme' }, [
           el('span', { class: 'field__label', textContent: S.settingsTheme }),
           theme,
         ]),
       ]),
+      el('p', { class: 'subtle', textContent: S.settingsShiftHint }),
       el('h3', { class: 'settings__heading', textContent: S.settingsColors }),
       colors,
       el('h3', { class: 'settings__heading', textContent: `${S.settingsHolidays} ${ctx.year}` }),
