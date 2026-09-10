@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pracovný denník",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Osobný denník pracovných dní so SQLite databázou.",
   "icons": {
     "16": "icons/icon-16.png",

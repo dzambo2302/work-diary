@@ -30,6 +30,20 @@ export function formatHours(n: number): string {
   return String(n).replace('.', ',');
 }
 
+/** Hours where the counted noun would only be noise: "176 h". */
+export function hoursShort(n: number): string {
+  return `${formatHours(n)} h`;
+}
+
+/**
+ * A balance, always carrying its sign so overtime and a shortfall read the same
+ * way. The minus is U+2212, which lines up with the digits; a hyphen does not.
+ */
+export function signedHours(n: number): string {
+  if (n === 0) return hoursShort(0);
+  return n > 0 ? `+${hoursShort(n)}` : `−${hoursShort(-n)}`;
+}
+
 /** A shift as the user reads it: "06:00 - 14:30". */
 export function formatShift(start: TimeOfDay, end: TimeOfDay): string {
   return `${start} – ${end}`;
@@ -39,6 +53,12 @@ export function formatLongDate(d: IsoDate): string {
   const { year, month, day } = parseIso(d);
   const weekday = SK_WEEKDAYS[dayOfWeek(d) - 1]!;
   return `${weekday} ${day}. ${SK_MONTHS_GENITIVE[month - 1]!} ${year}`;
+}
+
+/** Day and month only, for a label the surrounding text already dates: "10. 9.". */
+export function formatShortDate(d: IsoDate): string {
+  const { month, day } = parseIso(d);
+  return `${day}. ${month}.`;
 }
 
 export function formatMonthTitle(year: number, month: number): string {
@@ -88,12 +108,31 @@ export const S = {
   statsWorkedHours: 'Odpracované',
   statsEmpty: 'Za toto obdobie nie sú žiadne záznamy.',
 
+  balanceNorm: 'Fond pracovného času',
+  balanceWorked: 'Odpracované',
+  balanceAbsence: 'Náhrady (dovolenka, PN, lekár)',
+  balanceCredited: 'Spolu započítané',
+  balanceOvertime: 'Nadčas',
+  balanceShortfall: 'Chýba do fondu',
+  balanceToDate: 'K dnešku ({date})',
+  balanceHint:
+    'Fond je počet pracovných dní krát denný úväzok. Dovolenka, PN a lekár sa započítavajú ako celý úväzok.',
+  balanceForecast: 'Zvyšok obdobia je predvyplnený, celkový nadčas je preto len odhad.',
+
   settingsTitle: 'Nastavenia',
   settingsDefaultType: 'Predvolený typ pracovného dňa',
   settingsDefaultStart: 'Predvolený začiatok',
   settingsDefaultEnd: 'Predvolený koniec',
+  settingsStandardHours: 'Denný úväzok (h)',
+  settingsBreak: 'Prestávka (min)',
   settingsShiftHint:
-    'Počet hodín sa počíta z časov. Zo zmeny dlhšej ako 6 hodín sa odpočíta 30-minútová prestávka.',
+    'Počet hodín sa počíta z časov. Zo zmeny dlhšej ako 6 hodín sa odpočíta {minutes}-minútová prestávka.',
+  settingsShiftHintNoBreak:
+    'Počet hodín sa počíta z časov. Prestávka sa neodpočítava.',
+  settingsBreakWarning:
+    'Zmena prestávky prepočíta hodiny všetkých už zapísaných dní.',
+  settingsStandardHoursHint:
+    'Úväzok určuje fond pracovného času v štatistike. Nemení predvolenú zmenu — rozdiel medzi nimi je práve nadčas.',
   settingsTheme: 'Vzhľad',
   themeSystem: 'Podľa systému',
   themeLight: 'Svetlý',

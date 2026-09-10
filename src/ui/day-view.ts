@@ -14,6 +14,7 @@ export interface DayContext {
   theme: 'light' | 'dark';
   defaultStart: TimeOfDay;
   defaultEnd: TimeOfDay;
+  breakMinutes: number;
   onSave(entry: DayEntryInput): void;
   onDelete(day: IsoDate): void;
 }
@@ -70,7 +71,7 @@ export function renderDayView(root: HTMLElement, ctx: DayContext): void {
   /** The hours are output, never input — they follow the two times on every keystroke. */
   function syncTotal(): void {
     const [start, end] = shift();
-    const hours = computeHours(start, end);
+    const hours = computeHours(start, end, ctx.breakMinutes);
     total.textContent = `${formatHours(hours)} h`;
     const deducted = spanMinutes(start, end) - Math.round(hours * 60);
     breakHint.textContent =

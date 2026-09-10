@@ -63,6 +63,7 @@ const api: DiaryApi = {
   setHolidayRestDay: (day, isRestDay) => repo.setHolidayRestDay(db, day, isRestDay),
   getSettings: () => repo.allSettings(db),
   setSetting: (key, value) => repo.setSetting(db, key, value),
+  setBreakMinutes: (minutes) => repo.setBreakMinutes(db, minutes),
   summaryRows: (from, to) => repo.summaryRows(db, from, to),
   csvRows: (from, to) => repo.csvRows(db, from, to),
 

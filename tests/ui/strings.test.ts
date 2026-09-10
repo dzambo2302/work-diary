@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { days, formatHours, formatLongDate, formatMonthTitle, hours, plural, S }
-  from '../../src/ui/strings.js';
+import {
+  days, formatHours, formatLongDate, formatMonthTitle, formatShortDate, hours,
+  hoursShort, plural, signedHours, S,
+} from '../../src/ui/strings.js';
 
 describe('plural', () => {
   it('uses the three Slovak forms', () => {
@@ -38,6 +40,23 @@ describe('formatting', () => {
 
   it('formats a month title in the nominative', () => {
     expect(formatMonthTitle(2026, 9)).toBe('september 2026');
+  });
+
+  it('writes a compact hour figure without the counted noun', () => {
+    expect(hoursShort(176)).toBe('176 h');
+    expect(hoursShort(7.5)).toBe('7,5 h');
+  });
+
+  it('signs a balance, and leaves zero unsigned', () => {
+    expect(signedHours(8)).toBe('+8 h');
+    expect(signedHours(0.5)).toBe('+0,5 h');
+    expect(signedHours(-4.25)).toBe('−4,25 h');
+    expect(signedHours(0)).toBe('0 h');
+  });
+
+  it('shortens a date to the day and month', () => {
+    expect(formatShortDate('2026-09-10')).toBe('10. 9.');
+    expect(formatShortDate('2026-01-01')).toBe('1. 1.');
   });
 });
 

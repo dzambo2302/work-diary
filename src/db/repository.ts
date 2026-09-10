@@ -3,7 +3,8 @@ import { isDayTypeCode, type DayTypeCode } from '../domain/day-types.js';
 import { slovakHolidays } from '../domain/holidays-sk.js';
 import { restDaySet, workdaysInYear } from '../domain/workdays.js';
 import {
-  DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours, isTimeOfDay, type TimeOfDay,
+  DEFAULT_END, DEFAULT_START, computeHours, endTimeForHours, isTimeOfDay,
+  parseBreakMinutes, type TimeOfDay,
 } from '../domain/times.js';
 import { DEFAULT_SETTINGS, MIGRATIONS, dayTypeSeedSql } from './schema.js';
 
@@ -120,6 +121,32 @@ export function setSetting(db: Db, key: string, value: string): void {
   );
 }
 
+/** The stored break, as the shift maths wants it. */
+export function breakMinutes(db: Db): number {
+  return parseBreakMinutes(getSetting(db, 'break_minutes'));
+}
+
+/**
+ * Changes the break and brings every stored entry back in line with it.
+ *
+ * `day_entry.hours` is derived from the shift, so a break the rows were not
+ * computed under would leave the column disagreeing with the two times beside
+ * it. Recomputing keeps the one invariant every aggregate here relies on.
+ */
+export function setBreakMinutes(db: Db, minutes: number): void {
+  const value = parseBreakMinutes(minutes);
+  db.transaction(() => {
+    setSetting(db, 'break_minutes', String(value));
+    for (const row of db.all<{ day: IsoDate; start_time: TimeOfDay; end_time: TimeOfDay }>(
+      'SELECT day, start_time, end_time FROM day_entry',
+    )) {
+      db.exec('UPDATE day_entry SET hours = ? WHERE day = ?', [
+        computeHours(row.start_time, row.end_time, value), row.day,
+      ]);
+    }
+  });
+}
+
 export function allSettings(db: Db): Record<string, string> {
   const out: Record<string, string> = {};
   for (const r of db.all<{ key: string; value: string }>('SELECT key, value FROM setting')) {
@@ -189,7 +216,7 @@ export function upsertEntry(db: Db, entry: DayEntryInput): void {
        updated_at = datetime('now')`,
     [
       entry.day, entry.typeCode, entry.startTime, entry.endTime,
-      computeHours(entry.startTime, entry.endTime), entry.note,
+      computeHours(entry.startTime, entry.endTime, breakMinutes(db)), entry.note,
     ],
   );
 }
@@ -282,7 +309,7 @@ export function ensureYearSeeded(db: Db, year: number): { seeded: boolean; inser
   const typeCode: DayTypeCode = isDayTypeCode(rawType) ? rawType : 'office';
   const startTime = shiftSetting(db, 'default_start', DEFAULT_START);
   const endTime = shiftSetting(db, 'default_end', DEFAULT_END);
-  const hours = computeHours(startTime, endTime);
+  const hours = computeHours(startTime, endTime, breakMinutes(db));
 
   let inserted = 0;
   db.transaction(() => {

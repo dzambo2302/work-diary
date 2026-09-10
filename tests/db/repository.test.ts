@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { memoryDb } from './helpers.js';
 import {
-  allSettings, csvRows, deleteEntry, getSetting, initialize, listDayTypes,
-  listEntries, listHolidays, setHolidayRestDay, setSetting, summaryRows,
-  upsertEntry, type Db,
+  allSettings, csvRows, deleteEntry, ensureYearSeeded, getSetting, initialize,
+  listDayTypes, listEntries, listHolidays, setBreakMinutes, setHolidayRestDay,
+  setSetting, summaryRows, upsertEntry, type Db,
 } from '../../src/db/repository.js';
 import { MIGRATIONS, dayTypeSeedSql } from '../../src/db/schema.js';
 
@@ -213,5 +213,50 @@ describe('aggregates', () => {
     expect(allSettings(db)).toMatchObject({
       default_type: 'office', default_start: '06:00', default_end: '14:30',
     });
+  });
+});
+
+describe('the break setting', () => {
+  it('is seeded alongside the contracted day', () => {
+    expect(getSetting(db, 'break_minutes')).toBe('30');
+    expect(getSetting(db, 'standard_hours')).toBe('8');
+  });
+
+  it('governs the hours a new entry is worth', () => {
+    setBreakMinutes(db, 45);
+    upsertEntry(db, {
+      day: '2026-09-09', typeCode: 'office', startTime: '06:00', endTime: '14:30', note: null,
+    });
+    expect(listEntries(db, '2026-09-09', '2026-09-09')[0]!.hours).toBe(7.75);
+  });
+
+  it('rewrites the hours of entries already recorded', () => {
+    upsertEntry(db, {
+      day: '2026-09-09', typeCode: 'office', startTime: '06:00', endTime: '14:30', note: null,
+    });
+    upsertEntry(db, {
+      day: '2026-09-10', typeCode: 'home', startTime: '08:00', endTime: '13:00', note: null,
+    });
+
+    setBreakMinutes(db, 60);
+
+    const entries = listEntries(db, '2026-09-09', '2026-09-10');
+    expect(entries[0]!.hours).toBe(7.5);  // 8.5 span, an hour off
+    expect(entries[1]!.hours).toBe(5);    // under six hours, untouched
+    expect(entries[0]!.startTime).toBe('06:00');
+    expect(entries[0]!.endTime).toBe('14:30');
+  });
+
+  it('normalises what it stores and falls back on nonsense', () => {
+    setBreakMinutes(db, 45.4);
+    expect(getSetting(db, 'break_minutes')).toBe('45');
+    setBreakMinutes(db, 999);
+    expect(getSetting(db, 'break_minutes')).toBe('30');
+  });
+
+  it('is used by the days a fresh year auto-fills', () => {
+    setBreakMinutes(db, 45);
+    ensureYearSeeded(db, 2026);
+    expect(listEntries(db, '2026-09-09', '2026-09-09')[0]!.hours).toBe(7.75);
   });
 });

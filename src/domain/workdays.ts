@@ -8,9 +8,16 @@ export function restDaySet(year: number): Set<IsoDate> {
   );
 }
 
+/** Every Mon–Fri from `from` to `to` inclusive that is not in `restDays`. */
+export function workdaysInRange(
+  from: IsoDate,
+  to: IsoDate,
+  restDays: ReadonlySet<IsoDate>,
+): IsoDate[] {
+  return datesInRange(from, to).filter((d) => !isWeekend(d) && !restDays.has(d));
+}
+
 /** Every Mon–Fri of `year` that is not in `restDays`. */
 export function workdaysInYear(year: number, restDays: ReadonlySet<IsoDate>): IsoDate[] {
-  return datesInRange(isoDate(year, 1, 1), isoDate(year, 12, 31)).filter(
-    (d) => !isWeekend(d) && !restDays.has(d),
-  );
+  return workdaysInRange(isoDate(year, 1, 1), isoDate(year, 12, 31), restDays);
 }
